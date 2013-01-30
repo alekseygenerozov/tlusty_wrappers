@@ -85,8 +85,12 @@ int main(int argc, char* argv[]){
     }
     //Getting the surface density Mdot and radius radius from command line args.
     double Sigma0=atof(argv[1]);
-    double Mdot=atof(argv[2]);
+    //Second argument is interpreted to be mass accretion rate as fraction of Eddington
+    double mdot=atof(argv[2]);
     double R=atof(argv[3])*(2*G*M/pow(c, 2));
+    double Mdot=mdot*10*4*PI*G*M/(kappa*c);
+
+    printf("%e\n", Mdot);
 
     //Loop variable
     int i=0;
@@ -104,7 +108,7 @@ int main(int argc, char* argv[]){
     //Indicates attempted number of density bisections
     int tries=0;
     //Max number of tries
-    int MaxTries=100;
+    int MaxTries=1E4;
     //Steps in the RK4 integrator
     int steps=0;
     //Max number of steps allowed
@@ -272,7 +276,7 @@ int main(int argc, char* argv[]){
         //printf("%lf\n", rhoc);
     	//cout<<Sigma<<" "<<Sigma0<<" "<<rhoc_min_pow<<" "<<rhoc_max_pow<<" "<<setprecision(10)<<rhoc<<endl;
     }
-    
+    printf("%d\n",tries);
     return 0;
 }
 
