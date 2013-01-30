@@ -137,7 +137,7 @@ int main(int argc, char* argv[]){
     gsl_odeiv2_system sys={func, jac, n, params};
     //gsl_odeiv2_driver* d=gsl_odeiv2_driver_alloc_y_new(&sys, gsl_odeiv2_step_rkck, du, 0, 1E20);
     gsl_odeiv2_evolve* e=gsl_odeiv2_evolve_alloc (n);
-    gsl_odeiv2_control* con = gsl_odeiv2_control_standard_new (eps_abs,  eps_rel, 1, 0);
+    gsl_odeiv2_control* con = gsl_odeiv2_control_standard_new (eps_abs,  eps_rel, 0, 1);
     gsl_odeiv2_step * stepfunc=gsl_odeiv2_step_alloc (gsl_odeiv2_step_rkck, n);
 
 
