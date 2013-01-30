@@ -212,10 +212,10 @@ int main(int argc, char* argv[]){
     	      //out<<x[i]<<" ";
               fprintf(out, "%.4e ", y[i]);
             }
-            fprintf(out, "%.4e", du);
-            fprintf(out, "\n");
-            //fprintf(out, "%.4e %.4e\n", delad(x), delrad(x));
-            
+            fprintf(out, "%.4e ", du);
+	    fprintf(out, "%.4e %.4e\n", delad(u, y, params), delrad(u, y, params));
+
+
 	    
 
 
