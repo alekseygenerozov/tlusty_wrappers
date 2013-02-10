@@ -236,7 +236,7 @@ int main(int argc, char* argv[]){
 
 
             if(status != GSL_SUCCESS){
-	      printf("test\n");
+              //printf("test\n");
 	      break;
             }
 
