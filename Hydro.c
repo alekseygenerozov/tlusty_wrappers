@@ -184,76 +184,89 @@ double cfl(const double aplus[], const double aminus[], int ng, double delta_x){
 
 
 int main(int argc, char* argv[]){
-    FILE* out=fopen("hydro.txt", "w");
 
-    //Loop variable
-    int i=0;
-    //Number of grid points
-    int ng=100;
-    //x boundaries of our numerical domain
-    double xmin=0;
-    double xmax=1;
-    //size of each of our cells
-    double delta_x=(xmax-xmin)/ng;
+    int ng=2;
+    double u[]={1,1,1, 0.5, 0, 0};
+    double F[ng*n];
+    flux(u, F, ng);
 
-
-
-    //Initial condition
-    double u[ng*n];
-    double rho_l=1;
-    double v_l=0;
-    double p_l=1;
-    double rho_r=0.1;
-    double v_r=0;
-    double p_r=0.125;
-
-    printf("%d\n", (ng*n)/2);
-
-    for(i=0; i<((ng*n)/2); i+=n){
-        u[i]=rho_l;
-        u[i+1]=rho_l*v_l;
-        u[i+2]=p_l/(gamma-1)+(rho_l*pow(v_l,2));
-
-    }
-    printf("%d\n", i);
-    for (i=((ng*n)/2); i<(ng*n); i+=n){
-        u[i]=rho_r;
-        u[i+1]=rho_r*v_r;
-        u[i+2]=p_r/(gamma-1)+(rho_r*pow(v_r,2));
-    }
-
-    //Alpha's
     double aplus[ng-1], aminus[ng-1];
-    //Time derivatives
-    double L[ng*n];
-    //Time step we are going to take
-    double delta_t=0;
-    //Keeping track of time that went by
-    double t=0;
-    //Keep track of number of iterations
-    int iterations=0;
-    while((t<1)&&(iterations<1)){
-        //Calculate alpha at each grid point
-        alpha_minus(u, aminus, ng);
-        alpha_plus(u, aplus, ng);
-        //Calculate time step
-        delta_t=cfl(aplus, aminus, ng, delta_x);
+
+    alpha_plus(u, aplus, ng);
+    alpha_minus(u, aminus, ng);
+    printf("%lf %lf\n", aminus[i], aplus[i]);
 
 
-        for (i=0; i<ng-1; i++){
-            printf("%lf %lf\n", aminus[i], aplus[i]);
-        }
-
-        for (i=0; i<ng*n; i+=n){
-            fprintf(out, "%lf %lf %lf\n", t, delta_x*i, u[i]);
-        }
-
-        //Evolve forward one time step
-        Euler(t, u, L, delta_t, ng, delta_x, &derivs);
-        t+=delta_t;
-        iterations++;
-
-    }
+//    FILE* out=fopen("hydro.txt", "w");
+//
+//    //Loop variable
+//    int i=0;
+//    //Number of grid points
+//    int ng=100;
+//    //x boundaries of our numerical domain
+//    double xmin=0;
+//    double xmax=1;
+//    //size of each of our cells
+//    double delta_x=(xmax-xmin)/ng;
+//
+//
+//
+//    //Initial condition
+//    double u[ng*n];
+//    double rho_l=1;
+//    double v_l=0;
+//    double p_l=1;
+//    double rho_r=0.1;
+//    double v_r=0;
+//    double p_r=0.125;
+//
+//    printf("%d\n", (ng*n)/2);
+//
+//    for(i=0; i<((ng*n)/2); i+=n){
+//        u[i]=rho_l;
+//        u[i+1]=rho_l*v_l;
+//        u[i+2]=p_l/(gamma-1)+(rho_l*pow(v_l,2));
+//
+//    }
+//    printf("%d\n", i);
+//    for (i=((ng*n)/2); i<(ng*n); i+=n){
+//        u[i]=rho_r;
+//        u[i+1]=rho_r*v_r;
+//        u[i+2]=p_r/(gamma-1)+(rho_r*pow(v_r,2));
+//    }
+//
+//    //Alpha's
+//    double aplus[ng-1], aminus[ng-1];
+//    //Time derivatives
+//    double L[ng*n];
+//    //Time step we are going to take
+//    double delta_t=0;
+//    //Keeping track of time that went by
+//    double t=0;
+//    //Keep track of number of iterations
+//    int iterations=0;
+//    while((t<1)&&(iterations<1)){
+//        //Calculate alpha at each grid point
+//        alpha_minus(u, aminus, ng);
+//        alpha_plus(u, aplus, ng);
+//        //Calculate time step
+//        delta_t=cfl(aplus, aminus, ng, delta_x);
+//
+//
+//        for (i=0; i<ng-1; i++){
+//            printf("%lf %lf\n", aminus[i], aplus[i]);
+//        }
+//
+//        for (i=0; i<ng*n; i+=n){
+//            fprintf(out, "%lf %lf %lf\n", t, delta_x*i, u[i]);
+//        }
+//
+//        //Evolve forward one time step
+//        Euler(t, u, L, delta_t, ng, delta_x, &derivs);
+//        t+=delta_t;
+//        iterations++;
+//
+//    }
 
     return 0;
 }
