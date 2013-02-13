@@ -184,9 +184,11 @@ double cfl(const double aplus[], const double aminus[], int ng, double delta_x){
 
 
 int main(int argc, char* argv[]){
+    //Loop variable
+    int i=0;
 
-    int ng=2;
-    double u[]={1,1,1, 0.5, 0, 0};
+    int ng=3;
+    double u[]={1,1,1, 0.5, 0, 0, 0.25, 0, 0};
     double F[ng*n];
     flux(u, F, ng);
 
@@ -194,7 +196,9 @@ int main(int argc, char* argv[]){
 
     alpha_plus(u, aplus, ng);
     alpha_minus(u, aminus, ng);
-    printf("%lf %lf\n", aminus[i], aplus[i]);
+    for (i=0; i<ng; i+=n){
+        printf("%lf %lf\n", F[i], F[i+1]);
+    }
 
 
 //    FILE* out=fopen("hydro.txt", "w");
