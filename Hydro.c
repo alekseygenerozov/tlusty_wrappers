@@ -33,6 +33,7 @@ double pres(const double u[]){
     return (gamma-1)*rho*e;
 }
 
+//Calculates the flux given a vecor u at the and stores it in vector F
 void flux(const double u[], double F[], int ng){
     //Loop index
     int i=0;
@@ -127,7 +128,6 @@ double hll(const double u[], const double F[], const double aplus[], const doubl
 
 
 void derivs(double t, const double u[], double L[], int ng, double delta_x){
-    FILE* out=fopen("hydro_test.txt", "w");
 
     //Loop variables
     int i=0;
@@ -153,7 +153,7 @@ void derivs(double t, const double u[], double L[], int ng, double delta_x){
             double Fi_up=hll(u, F, aplus, aminus, i, j, ng);
             //Time derivative
             L[(n*i)+j]=-(Fi_up-Fi_down)/(delta_x);
-            printf( "%lf %lf %lf\n", F[n*(i+1)+j], aplus[i], L[(n*i)+j]);
+
         }
     }
 
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]){
     //Loop variable
     int i=0;
     //Number of grid points
-    int ng=100;
+    int ng=200;
     //x boundaries of our numerical domain
     double xmin=0;
     double xmax=1;
@@ -253,7 +253,7 @@ int main(int argc, char* argv[]){
     double t=0;
     //Keep track of number of iterations
     int iterations=0;
-    while((t<1)&&(iterations<1)){
+    while((t<0.2)){
         //Calculate alpha at each grid point
         alpha_minus(u, aminus, ng);
         alpha_plus(u, aplus, ng);
@@ -266,9 +266,9 @@ int main(int argc, char* argv[]){
 //        }
 
         for (i=0; i<ng*n; i+=n){
-            fprintf(out, "%lf %lf %lf\n", t, delta_x*i, u[i]);
+            fprintf(out, "%lf %lf %lf\n", t, delta_x*(i/n), u[i]);
         }
-        fprintf(out, "\n");
+        //fprintf(out, "\n");
 
         //Evolve forward one time step
         Euler(t, u, L, delta_t, ng, delta_x, &derivs);
