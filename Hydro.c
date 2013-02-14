@@ -86,8 +86,8 @@ void alpha_plus(const double u[],  double aplus[], int ng){
 
 
     for(i=0; i<ng-1; i++){
-        l1=lplus(&(u[i]));
-        l2=lplus(&(u[i+n]));
+        l1=lplus(&(u[n*i]));
+        l2=lplus(&(u[n*(i+1)]));
 
         aplus[i]=(l1>l2)?l1:l2;
         aplus[i]=(aplus[i]>0)?aplus[i]:0;
@@ -100,8 +100,8 @@ void alpha_minus(const double u[], double aminus[], int ng){
     double l1, l2;
 
     for(i=0; i<ng-1; i++){
-        l1=lplus(&(u[i]));
-        l2=lplus(&(u[i+n]));
+        l1=lplus(&(u[n*i]));
+        l2=lplus(&(u[n*(i+1)]));
 
         aminus[i]=(-l1>-l2)?l1:l2;
         aminus[i]=(aminus[i]>0)?aminus[i]:0;
@@ -112,45 +112,50 @@ void alpha_minus(const double u[], double aminus[], int ng){
 //Reimann solver
 double hll(const double u[], const double F[], const double aplus[], const double aminus[], int i, int j, int ng){
 
+
     //Flux is zero at the boundaries
     if(i<0){
-        return 0;
+        return F[j];
     }
-    if (i>=(ng-n)){
-        return 0;
+    if (i>(ng-2)){
+        return F[j+(ng-1)*n];
     }
 
 
-    return (aplus[i]*F[i+j]+aminus[i]*F[i+j+n]-(aplus[i]*aminus[i])*(u[i+j+n]-u[i+j]))/(aplus[i]+aminus[i]);
+    return (aplus[i]*F[(n*i)+j]+aminus[i]*F[n*(i+1)+j]-(aplus[i]*aminus[i])*(u[n*(i+1)+j]-u[(n*i)+j]))/(aplus[i]+aminus[i]);
 }
 
 
 void derivs(double t, const double u[], double L[], int ng, double delta_x){
-  //Loop variables
-  int i=0;
-  int j=0;
+    FILE* out=fopen("hydro_test.txt", "w");
+
+    //Loop variables
+    int i=0;
+    int j=0;
 
 
-  double F[ng*n];
-  //Calculating the flux at each of the grid points
-  flux(u, F, ng);
+    double F[ng*n];
+    //Calculating the flux at each of the grid points
+    flux(u, F, ng);
 
 
-  double aplus[ng-1], aminus[ng-1];
-  alpha_plus(u,  aplus, ng);
-  alpha_minus(u, aminus, ng);
+    double aplus[ng-1], aminus[ng-1];
+    alpha_plus(u,  aplus, ng);
+    alpha_minus(u, aminus, ng);
 
 
 
-  //For each of the grid points
-  for (i=0; i<ng; i+=n){
-      for (j=0; j<n; j++){
-          double Fi_down=hll(u, F, aplus, aminus, i-n, j, ng);
-          double Fi_up=hll(u, F, aplus, aminus, i, j, ng);
-          //Time derivative
-          L[i+j]=-(Fi_up-Fi_down)/(delta_x);
-      }
-  }
+    //For each of the grid points. N.B. The index i represents the index of the grid point.
+    for (i=0; i<ng; i++){
+        //For each of the three variables.
+        for (j=0; j<n; j++){
+            double Fi_down=hll(u, F, aplus, aminus, i-1, j, ng);
+            double Fi_up=hll(u, F, aplus, aminus, i, j, ng);
+            //Time derivative
+            L[(n*i)+j]=-(Fi_up-Fi_down)/(delta_x);
+            printf( "%lf %lf %lf\n", F[n*(i+1)+j], aplus[i], L[(n*i)+j]);
+        }
+    }
 
 
 
@@ -164,12 +169,6 @@ void Euler(double t, double u[], double L[], double delta_t,  int ng, double del
 
     //Calculate derivatives
     myderivs(t, u, L, ng, delta_x);
-
-    for (i=0; i<ng*n; i++){
-        printf("%lf\n", L[i]);
-    }
-
-
     for (i=0; i<ng*n; i++){
         u[i]+=delta_t*L[i];
     }
@@ -201,8 +200,8 @@ int main(int argc, char* argv[]){
 //
 //    alpha_plus(u, aplus, ng);
 //    alpha_minus(u, aminus, ng);
-//    for (i=0; i<ng; i+=n){
-//        printf("%lf %lf\n", F[i], F[i+1]);
+//    for (i=0; i<ng-1; i++){
+//        printf("%lf %lf\n", aplus[i],aminus[i]);
 //    }
 
 
@@ -254,7 +253,7 @@ int main(int argc, char* argv[]){
     double t=0;
     //Keep track of number of iterations
     int iterations=0;
-    while((t<1)&&(iterations<2)){
+    while((t<1)&&(iterations<1)){
         //Calculate alpha at each grid point
         alpha_minus(u, aminus, ng);
         alpha_plus(u, aplus, ng);
@@ -262,9 +261,9 @@ int main(int argc, char* argv[]){
         delta_t=cfl(aplus, aminus, ng, delta_x);
 
 
-        for (i=0; i<ng-1; i++){
-            printf("%lf %lf\n", aminus[i], aplus[i]);
-        }
+//        for (i=0; i<ng-1; i++){
+//            printf("%lf %lf\n", aminus[i], aplus[i]);
+//        }
 
         for (i=0; i<ng*n; i+=n){
             fprintf(out, "%lf %lf %lf\n", t, delta_x*i, u[i]);
