@@ -175,6 +175,9 @@ void Euler(double t, double u[], double L[], double delta_t,  int ng, double del
 }
 
 void ShuOsher(double t, double u[], double L[], double delta_t,  int ng, double delta_x, void(* myderivs)(double,  const double *, double *, int,  double)){
+    //Loop variable
+    int i=0;
+
     //Store solution vectors at intermediate steps
     double u1[ng*n], u2[ng*n];
 
@@ -194,7 +197,7 @@ void ShuOsher(double t, double u[], double L[], double delta_t,  int ng, double 
     /*Calculate derivatives at u2. Note once again that the explicit
     value of t does not matter.*/
     myderivs(t, u2, L, ng, delta_x);
-    for (i==0; i<(ng*n); i++){
+    for (i=0; i<(ng*n); i++){
         u[i]=(1./3.)*u[i]+(2./3.)*u2[i]+(2./3.)*delta_t*L[i];
     }
 
@@ -287,7 +290,7 @@ int main(int argc, char* argv[]){
     for (i=0; i<ng*n; i+=n){
         fprintf(out, "%lf %lf %lf\n", t, delta_x*(i/n), u[i]);
     }
-    while(t<tmax){
+    while((t<tmax)){
         //Calculate alpha at each grid point
         alpha_minus(u, aminus, ng);
         alpha_plus(u, aplus, ng);
@@ -301,7 +304,7 @@ int main(int argc, char* argv[]){
 
 
         //Evolve forward one time step
-        Euler(t, u, L, delta_t, ng, delta_x, &derivs);
+        ShuOsher(t, u, L, delta_t, ng, delta_x, &derivs);
         t+=delta_t;
         iterations++;
 
