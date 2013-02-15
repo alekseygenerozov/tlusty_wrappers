@@ -213,7 +213,7 @@ int main(int argc, char* argv[]){
     int ng=200;
     //x boundaries of our numerical domain
     double xmin=0;
-    double xmax=1;
+    double xmax=5;
     //size of each of our cells
     double delta_x=(xmax-xmin)/ng;
 
@@ -221,12 +221,12 @@ int main(int argc, char* argv[]){
 
     //Initial condition
     double u[ng*n];
-    double rho_l=1;
+    double rho_l=10;
     double v_l=0;
-    double p_l=1;
-    double rho_r=0.1;
+    double p_l=100;
+    double rho_r=1;
     double v_r=0;
-    double p_r=0.125;
+    double p_r=1;
 
     printf("%d\n", (ng*n)/2);
 
@@ -251,29 +251,37 @@ int main(int argc, char* argv[]){
     double delta_t=0;
     //Keeping track of time that went by
     double t=0;
+    //Maximum time to which we would like to integrate
+    double tmax=0.4;
     //Keep track of number of iterations
     int iterations=0;
-    while((t<0.2)){
+
+    //Write the initial conditionto output file
+    for (i=0; i<ng*n; i+=n){
+        fprintf(out, "%lf %lf %lf\n", t, delta_x*(i/n), u[i]);
+    }
+    while(t<tmax){
         //Calculate alpha at each grid point
         alpha_minus(u, aminus, ng);
         alpha_plus(u, aplus, ng);
         //Calculate time step
         delta_t=cfl(aplus, aminus, ng, delta_x);
-
-
-//        for (i=0; i<ng-1; i++){
-//            printf("%lf %lf\n", aminus[i], aplus[i]);
-//        }
-
-        for (i=0; i<ng*n; i+=n){
-            fprintf(out, "%lf %lf %lf\n", t, delta_x*(i/n), u[i]);
+        if (delta_t>(tmax-t)){
+            delta_t=tmax-t;
         }
-        //fprintf(out, "\n");
+
+
+
 
         //Evolve forward one time step
         Euler(t, u, L, delta_t, ng, delta_x, &derivs);
         t+=delta_t;
         iterations++;
+
+        //Write result to output file.
+        for (i=0; i<ng*n; i+=n){
+            fprintf(out, "%lf %lf %lf\n", t, delta_x*(i/n), u[i]);
+        }
 
     }
 
