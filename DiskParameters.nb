@@ -203,30 +203,154 @@ Cell[BoxData[{
   RowBox[{"Clear", "[", "Tc", "]"}], 
   "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
  RowBox[{
-  FractionBox["Mdot", 
-   RowBox[{"3", " ", "\[Pi]", " ", "\[CapitalSigma]", 
-    FractionBox[
-     RowBox[{"kb", " ", "Tc"}], 
-     RowBox[{"\[Mu]0", " ", "mp"}]], "0.3", " "}]], "/.", 
+  RowBox[{"\[Rho]c", " ", "kb", " ", 
+   FractionBox["Tc", 
+    RowBox[{"\[Mu]0", " ", "mp"}]]}], "/.", 
   RowBox[{"{", 
    RowBox[{
     RowBox[{"\[Mu]0", "\[Rule]", "0.615"}], ",", " ", 
     RowBox[{"Tc", "\[Rule]", 
-     RowBox[{"{", 
-      RowBox[{"25000", ",", " ", 
-       SuperscriptBox["10", "5"]}], "}"}]}], ",", " ", 
-    RowBox[{"\[CapitalSigma]", "\[Rule]", 
-     RowBox[{"{", 
-      RowBox[{"35000", ",", " ", "90000"}], "}"}]}], ",", 
-    RowBox[{"Mdot", "\[Rule]", 
-     RowBox[{"1.40", " ", 
-      SuperscriptBox["10", "24"]}]}]}], 
-   "}"}]}], "\[IndentingNewLine]"}], "Input"],
+     SuperscriptBox["10", "5"]}], ",", " ", 
+    RowBox[{"\[Rho]c", "\[Rule]", 
+     RowBox[{"1.5", " ", 
+      SuperscriptBox["10", 
+       RowBox[{"-", "8"}]]}]}]}], "}"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"4", "\[Sigma]", " ", 
+   RowBox[{
+    SuperscriptBox["Tc", "4"], "/", 
+    RowBox[{"(", 
+     RowBox[{"3", "c"}], ")"}]}]}], " ", "/.", 
+  RowBox[{"{", " ", 
+   RowBox[{"Tc", "\[Rule]", 
+    SuperscriptBox["10", "5"]}], "}"}]}], "\[IndentingNewLine]", 
+ RowBox[{"cs", "=", 
+  SqrtBox[
+   RowBox[{"\[Gamma]", " ", 
+    RowBox[{"(", 
+     RowBox[{"4", "\[Sigma]", " ", 
+      RowBox[{
+       SuperscriptBox["Tc", "4"], "/", 
+       RowBox[{"(", 
+        RowBox[{"3", "c", " ", "\[Rho]c"}], ")"}]}]}], 
+     ")"}]}]]}], "\[IndentingNewLine]", 
+ RowBox[{"H", "=", 
+  RowBox[{
+   FractionBox["Mdot", 
+    RowBox[{
+    "3", " ", "\[Pi]", " ", "\[CapitalSigma]", " ", "cs", " ", "\[Alpha]", 
+     " "}]], "/.", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"\[Mu]0", "\[Rule]", "0.615"}], ",", " ", 
+     RowBox[{"Tc", "\[Rule]", 
+      SuperscriptBox["10", "5"]}], ",", " ", 
+     RowBox[{"\[CapitalSigma]", "\[Rule]", " ", "90000"}], ",", 
+     RowBox[{"Mdot", "\[Rule]", 
+      RowBox[{"1.40", " ", 
+       SuperscriptBox["10", "24"]}]}], ",", " ", 
+     RowBox[{"\[Alpha]", "\[Rule]", "0.3"}], ",", " ", 
+     RowBox[{"\[Gamma]", "\[Rule]", 
+      RowBox[{"4", "/", "3"}]}]}], "}"}]}]}], "\[IndentingNewLine]", 
+ RowBox[{"rul", "=", 
+  RowBox[{
+   RowBox[{"(", 
+    RowBox[{"Solve", "[", 
+     RowBox[{
+      RowBox[{
+       FractionBox["90000", 
+        RowBox[{"2", " ", "H"}]], "\[Equal]", "\[Rho]c"}], ",", " ", 
+      "\[Rho]c"}], "]"}], ")"}], "[", 
+   RowBox[{"[", "3", "]"}], "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"\[Rho]c", " ", "kb", " ", 
+   FractionBox["Tc", 
+    RowBox[{"\[Mu]0", " ", "mp"}]]}], "/.", 
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"\[Mu]0", "\[Rule]", "0.615"}], ",", " ", 
+    RowBox[{"Tc", "\[Rule]", 
+     SuperscriptBox["10", "5"]}], ",", " ", 
+    RowBox[{"\[Rho]c", "\[Rule]", 
+     RowBox[{"1.5", " ", 
+      SuperscriptBox["10", 
+       RowBox[{"-", "8"}]]}]}]}], "}"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"4", "\[Sigma]", " ", 
+    RowBox[{
+     SuperscriptBox["Tc", "4"], "/", 
+     RowBox[{"(", 
+      RowBox[{"3", "c"}], ")"}]}]}], " ", "/.", "rul"}], "/.", 
+  RowBox[{"Tc", "\[Rule]", 
+   SuperscriptBox["10", "5"]}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    FractionBox["H", "cs"], "/.", "rul"}], "/.", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"\[Mu]0", "\[Rule]", "0.615"}], ",", " ", 
+     RowBox[{"Tc", "\[Rule]", 
+      SuperscriptBox["10", "5"]}], ",", " ", 
+     RowBox[{"\[CapitalSigma]", "\[Rule]", " ", "90000"}], ",", 
+     RowBox[{"Mdot", "\[Rule]", 
+      RowBox[{"1.40", " ", 
+       SuperscriptBox["10", "24"]}]}], ",", " ", 
+     RowBox[{"\[Alpha]", "\[Rule]", "0.3"}], ",", " ", 
+     RowBox[{"\[Gamma]", "\[Rule]", 
+      RowBox[{"4", "/", "3"}]}]}], "}"}]}], "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     FractionBox["H", "cs"], "/.", 
+     RowBox[{
+     "rul", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      "\[IndentingNewLine]", 
+      RowBox[{"2", " ", 
+       FractionBox["\[Pi]", 
+        SqrtBox[
+         RowBox[{"G", " ", 
+          RowBox[{"M", "/", 
+           SuperscriptBox["R", "3"]}]}]]]}]}]}], "/.", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"M", "\[Rule]", 
+       RowBox[{
+        SubscriptBox["M", "7"], 
+        SuperscriptBox["10", "7"], "Msun"}]}], ",", " ", 
+      RowBox[{"R", "\[Rule]", 
+       RowBox[{"200", " ", 
+        SubscriptBox["R", "s"]}]}], ",", " ", 
+      RowBox[{
+       SubscriptBox["M", "7"], "\[Rule]", "1"}]}], "}"}]}], "*)"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]"}], "Input"],
+
+Cell[BoxData["201548.12326566374`"], "Output"],
+
+Cell[BoxData["252000.`"], "Output"],
+
+Cell[BoxData[
+ RowBox[{"5.019960159204453`*^-8", " ", 
+  SqrtBox[
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["Tc", "4"], " ", "\[Gamma]"}], "\[Rho]c"]]}]], "Output"],
+
+Cell[BoxData[
+ FractionBox["9.49125202206994`*^15", 
+  SqrtBox[
+   FractionBox["1", "\[Rho]c"]]]], "Output"],
 
 Cell[BoxData[
  RowBox[{"{", 
-  RowBox[{"4.211531962706118`*^6", ",", "409454.496374206`"}], 
-  "}"}]], "Output"]
+  RowBox[{"\[Rho]c", "\[Rule]", "2.822231742811033`*^-8"}], "}"}]], "Output"],
+
+Cell[BoxData["201548.12326566374`"], "Output"],
+
+Cell[BoxData["252000.`"], "Output"],
+
+Cell[BoxData["462111.2473448874`"], "Output"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -403,7 +527,8 @@ Cell[BoxData[
      RowBox[{
       RowBox[{"profile", "[", 
        RowBox[{"[", 
-        RowBox[{"All", ",", "1"}], "]"}], "]"}], "//", "Min"}]}], ";"}], "\n", 
+        RowBox[{"All", ",", "1"}], "]"}], "]"}], "//", "Min"}]}], ";"}], "\n",
+    
    RowBox[{
     RowBox[{"umax", "=", 
      RowBox[{
