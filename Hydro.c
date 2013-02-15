@@ -174,6 +174,33 @@ void Euler(double t, double u[], double L[], double delta_t,  int ng, double del
     }
 }
 
+void ShuOsher(double t, double u[], double L[], double delta_t,  int ng, double delta_x, void(* myderivs)(double,  const double *, double *, int,  double)){
+    //Store solution vectors at intermediate steps
+    double u1[ng*n], u2[ng*n];
+
+    //Calculate derivatives
+    myderivs(t, u, L, ng, delta_x);
+    for (i=0; i<ng*n; i++){
+        u1[i]=u[i]+delta_t*L[i];
+    }
+    /*Calculate derivatives with the new u
+      Note that the explicit value of time
+      passed to the derivatives function does not matter.
+      Formally, I should probably pass t + delta_t or something*/
+    myderivs(t, u1, L, ng, delta_x);
+    for (i=0; i<(ng*n); i++){
+        u2[i]=(3./4.)*u[i]+(1./4.)*u1[i]+(1./4.)*delta_t*L[i];
+    }
+    /*Calculate derivatives at u2. Note once again that the explicit
+    value of t does not matter.*/
+    myderivs(t, u2, L, ng, delta_x);
+    for (i==0; i<(ng*n); i++){
+        u[i]=(1./3.)*u[i]+(2./3.)*u2[i]+(2./3.)*delta_t*L[i];
+    }
+
+
+}
+
 //Return the Courant-Friedrick-Levy time step multiplied by some safety factor
 double cfl(const double aplus[], const double aminus[], int ng, double delta_x){
     //Maximum of alpha pluses and minuses
