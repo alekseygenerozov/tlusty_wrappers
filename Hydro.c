@@ -112,17 +112,6 @@ void alpha_minus(const double u[], double aminus[], int ng){
 
 //Reimann solver
 double hll(const double u[], const double F[], const double aplus[], const double aminus[], int i, int j, int ng){
-
-
-    //Flux is zero at the boundaries
-    if(i<0){
-        return F[j];
-    }
-    if (i>(ng-2)){
-        return F[j+(ng-1)*n];
-    }
-
-
     return (aplus[i]*F[(n*i)+j]+aminus[i]*F[n*(i+1)+j]-(aplus[i]*aminus[i])*(u[n*(i+1)+j]-u[(n*i)+j]))/(aplus[i]+aminus[i]);
 }
 
@@ -138,10 +127,35 @@ void derivs(double t, const double u[], double L[], int ng, double delta_x){
     //Calculating the flux at each of the grid points
     flux(u, F, ng);
 
+    //Flux and u with 2 ghost cells appended
+    double F_ghost[(ng*n)+(4*n)];
+    double u_ghost[(ng*n)+(4*n)];
+    //Filling in our second flux vector with ghost cells
+    for(i=0; i<(ng+4)*n; i++){
+        //Boundary cells
+        if (i<2*n){
+            F_ghost[i]=F[i%3];
+            u_ghost[i]=u[i%3];
+        }
+        else if (i>(ng+2)*n-1){
+            F_ghost[i]=F[ng*n-3+(i%3)];
+            u_ghost[i]=F[ng*n-3+(i%3)];
+        }
+        //Middle cells
+        else{
+            F_ghost[i]=F[i];
+            u_ghost[i]=u[i];
+        }
+    }
 
-    double aplus[ng-1], aminus[ng-1];
-    alpha_plus(u,  aplus, ng);
-    alpha_minus(u, aminus, ng);
+
+
+
+
+
+    double aplus[ng+3], aminus[ng+3];
+    alpha_plus(u_ghost,  aplus, ng);
+    alpha_minus(u_ghost, aminus, ng);
 
 
 
@@ -149,8 +163,8 @@ void derivs(double t, const double u[], double L[], int ng, double delta_x){
     for (i=0; i<ng; i++){
         //For each of the three variables.
         for (j=0; j<n; j++){
-            double Fi_down=hll(u, F, aplus, aminus, i-1, j, ng);
-            double Fi_up=hll(u, F, aplus, aminus, i, j, ng);
+            double Fi_down=hll(&(u_ghost[2*n]), &(F_ghost[2*n]), &(aplus[2]), &(aminus[2]), i-1, j, ng);
+            double Fi_up=hll(&(u_ghost[2*n]), &(F_ghost[2*n]), &(aplus[2]), &(aminus[2]), i, j, ng);
             //Time derivative
             L[(n*i)+j]=-(Fi_up-Fi_down)/(delta_x);
 
