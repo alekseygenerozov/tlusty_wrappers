@@ -128,8 +128,8 @@ void derivs(double t, const double u[], double L[], int ng, double delta_x){
     flux(u, F, ng);
 
     //Flux and u with 2 ghost cells appended
-    double F_ghost[(ng*n)+(4*n)];
-    double u_ghost[(ng*n)+(4*n)];
+    double F_ghost[(ng+4)*n];
+    double u_ghost[(ng+4)*n];
     //Filling in our second flux vector with ghost cells
     for(i=0; i<(ng+4)*n; i++){
         //Boundary cells
@@ -137,16 +137,20 @@ void derivs(double t, const double u[], double L[], int ng, double delta_x){
             F_ghost[i]=F[i%3];
             u_ghost[i]=u[i%3];
         }
-        else if (i>(ng+2)*n-1){
-            F_ghost[i]=F[ng*n-3+(i%3)];
-            u_ghost[i]=F[ng*n-3+(i%3)];
+        else if (i>((ng+2)*n)-1){
+            F_ghost[i]=F[(ng*n)-3+(i%3)];
+            u_ghost[i]=u[(ng*n)-3+(i%3)];
         }
         //Middle cells
         else{
-            F_ghost[i]=F[i];
-            u_ghost[i]=u[i];
+            F_ghost[i]=F[i-(2*n)];
+            u_ghost[i]=u[i-(2*n)];
         }
     }
+//    for (i=0; i<(ng+4)*n; i++){
+//        printf("%d %lf %lf %d\n", i, F_ghost[i], u_ghost[i], i%3);
+//    }
+//    printf("\n");
 
 
 
@@ -154,10 +158,11 @@ void derivs(double t, const double u[], double L[], int ng, double delta_x){
 
 
     double aplus[ng+3], aminus[ng+3];
-    alpha_plus(u_ghost,  aplus, ng);
-    alpha_minus(u_ghost, aminus, ng);
+    alpha_plus(u_ghost,  aplus, ng+4);
+    alpha_minus(u_ghost, aminus, ng+4);
 
-
+    //Loop variable
+    int k=0;
 
     //For each of the grid points. N.B. The index i represents the index of the grid point.
     for (i=0; i<ng; i++){
@@ -167,10 +172,13 @@ void derivs(double t, const double u[], double L[], int ng, double delta_x){
             double Fi_up=hll(&(u_ghost[2*n]), &(F_ghost[2*n]), &(aplus[2]), &(aminus[2]), i, j, ng);
             //Time derivative
             L[(n*i)+j]=-(Fi_up-Fi_down)/(delta_x);
+            printf("%d %lf %lf %lf\n", i+j, L[(n*i)+j], Fi_up, Fi_down);
+
+
 
         }
     }
-
+    printf("\n");
 
 
 }
@@ -318,7 +326,7 @@ int main(int argc, char* argv[]){
 
 
         //Evolve forward one time step
-        ShuOsher(t, u, L, delta_t, ng, delta_x, &derivs);
+        Euler(t, u, L, delta_t, ng, delta_x, &derivs);
         t+=delta_t;
         iterations++;
 
