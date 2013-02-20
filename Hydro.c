@@ -1,9 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_odeiv2.h>
+
 
 
 #define gamma 1.4
@@ -13,22 +11,26 @@
 
 
 struct cell{
-    //Values of flux, conservative variables, and primitive variables for a cell
-    double F[n];
-    double u[n];
-    double v[n];
+  //Values of flux, conservative variables, and primitive variables for a cell
+  double* F;
+  double* u;
+  double* v;
 
-    //Size of cell
-    double delta_x;
+  //Size of cell
+  double delta_x;
 
-    //left and right biased values for each interface
-    double F_ll[n], F_lr[n], F_rl[n], F_rr[n];
-    double u_ll[n], u_lr[n], u_rl[n], u_rr[n];
-    double v_ll[n], v_lr[n], v_rl[n], v_rr[n];
+  //left and right biased values for each interface
+  double F_ll[n], F_lr[n], F_rl[n], F_rr[n];
+  double u_ll[n], u_lr[n], u_rl[n], u_rr[n];
+  double v_ll[n], v_lr[n], v_rl[n], v_rr[n];
+  //fluxes at interfaces
+  double Fi_l[n], Fi_r[n];
+  //Time derivative estimated from the fluxes at interfaces.
+  double L[n];
 
-    double Fi_l[n], Fi_r[n];
+  
 
-    double aplus_r, aplus_l, aminus_r, aminus_l;
+  double aplus_r, aplus_l, aminus_r, aminus_l;
 
 
 
@@ -72,10 +74,7 @@ double minmod(double x, double y, double z){
     return (1./4.)*abs(sgn(x)+sgn(y))*(sgn(x)+sgn(z))*min(tmp, 3);
 
 }
-//converts to primitive variables
-void to_prim(const double u[], double v[]){
 
-}
 
 //void plm(const double c[], double c1, char x){
 //    if (x=='l'){
@@ -86,28 +85,41 @@ void to_prim(const double u[], double v[]){
 
 //Computes specific energy from primitive variables given our equation of state
 double en(const double v[]){
-    double rho=v[0];
-    double vel=v[1];
-    double p=v[2];
+  double rho=v[0];
+  double vel=v[1];
+  double p=v[2];
 
-
-    return p/(rho*(gamma-1));
+  return p/(rho*(gamma-1));
 
 }
 
+//Converts conservative variables to primitive variables
+void to_prim(const double u[], double v[]){
+  double rho=u[0];
+  v[0]=rho;
+
+
+  double vel=u[1]/rho;
+  v[1]=vel;
+
+  double E=u[2];
+  double pres=(E-(1./2.)*rho*pow(vel,2))*(gamma-1);
+  v[2]=pres;
+ }
+
 //Function that converts primitive variables to conservative variables
 void to_cons(const double v[], double u[]){
-    double rho=v[0];
-    double vel=v[1];
-    double p=v[2];
-    //specific internal energy
-    double e=en(v);
+  double rho=v[0];
+  double vel=v[1];
+  double p=v[2];
+  //specific internal energy
+  double e=en(v);
 
 
 
-    u[0]=rho;
-    u[1]=rho*vel;
-    u[2]=(1./2.)*rho*pow(vel,2)+(rho*e);
+  u[0]=rho;
+  u[1]=rho*vel;
+  u[2]=(1./2.)*rho*pow(vel,2)+(rho*e);
 
 }
 
@@ -142,8 +154,6 @@ double lminus(const double v[]){
     double p=v[2];
     double cs=pow(gamma*p/rho, 0.5);
 
-    //printf("%lf %lf %lf %lf\n", rho, vel, p, cs);
-
     return vel-cs;
 }
 
@@ -176,8 +186,11 @@ double alpha_minus(const double vl[], const double vr[]){
 void hll(double F_i[], const double u_l[], const double u_r[], const double F_l[], const double F_r[], const double aplus, const double aminus){
     int i=0;
     for(i=0; i<n; i++){
-        F_i[i]=(aplus*F_l[i]+aminus*F_r[i]-(aplus*aminus)*(u_r[i]-u_l[i]))/(aplus+aminus);
+      
+      F_i[i]=(aplus*F_l[i]+aminus*F_r[i]-(aplus*aminus)*(u_r[i]-u_l[i]))/(aplus+aminus);
+      
     }
+    //printf("%lf\n", F_i[0]);
 }
 
 
@@ -248,14 +261,7 @@ void hll(double F_i[], const double u_l[], const double u_r[], const double F_l[
 /*Forward euler scheme: given current solution vector and time it computes vector of derivatives and then
 evolves the solution vector forward by one time step*/
 void Euler(double t, double u[], double L[], double delta_t,  int ng, double delta_x, void(* myderivs)(double,  const double *, double *, int,  double)){
-    //Loop variable
-    int i=0;
 
-    //Calculate derivatives
-    myderivs(t, u, L, ng, delta_x);
-    for (i=0; i<ng*n; i++){
-        u[i]+=delta_t*L[i];
-    }
 }
 
 void ShuOsher(double t, double u[], double L[], double delta_t,  int ng, double delta_x, void(* myderivs)(double,  const double *, double *, int,  double)){
@@ -288,177 +294,212 @@ void ShuOsher(double t, double u[], double L[], double delta_t,  int ng, double 
 
 }
 
-//Return the Courant-Friedrick-Levy time step multiplied by some safety factor
-double cfl(const double aplus[], const double aminus[], int ng, double delta_x){
-    //Maximum of alpha pluses and minuses
-    double m1=max(aplus, ng-1);
-    double m2=max(aminus, ng-1);
-    //Maximum of the alpha pluses and minuses
+double cfl(struct cell* grid, int ng, double delta_x){
+    //Loop variable
+    int i=0;
+    double aplus[ng+1], aminus[ng+1];
+
+    for (i=0; i<ng; i++){
+        aplus[i]=grid[i].aplus_l;
+        aminus[i]=grid[i].aminus_l;
+    }
+    aplus[ng]=grid[ng-1].aplus_r;
+    aminus[ng]=grid[ng-1].aminus_r;
+
+    double m1=max(aplus, ng+1);
+    double m2=max(aminus, ng+1);
     double m=(m1>m2)?m1:m2;
 
-
     return safety*(delta_x/m);
+
 }
 
 //Given grid and its size this function computes the fluxes at all of the interfaces
 void interfaces(struct cell* grid, int ng){
-    int i=0;
-    int j=0;
+  int i=0;
+  int j=0;
 
-    for(i=1; i<ng-1; i++){
-        for (j=0; j<n; j++){
-            //printf("%lf\n", grid[i].v[j]);
+  int tmp1, tmp2;
 
-            grid[i].v_ll[j]=grid[i-1].v[j];
-            grid[i].v_lr[j]=grid[i].v[j];
-            grid[i].v_rl[j]=grid[i].v[j];
-            grid[i].v_rr[j]=grid[i+1].v[j];
-
-            //printf("%lf %lf %lf\n", grid[i-1].v[j], grid[i].v_lr[j], grid[i].v_ll[j]);
-
-            grid[i].u_ll[j]=grid[i-1].u[j];
-            grid[i].u_lr[j]=grid[i].u[j];
-            grid[i].u_rl[j]=grid[i].u[j];
-            grid[i].u_rr[j]=grid[i+1].u[j];
-
-            grid[i].F_ll[j]=grid[i-1].F[j];
-            grid[i].F_lr[j]=grid[i].F[j];
-            grid[i].F_rl[j]=grid[i].F[j];
-            grid[i].F_rr[j]=grid[i+1].F[j];
-
-
-
-        }
-
-
-
-        grid[i].aplus_l=alpha_plus(grid[i].v_ll, grid[i].v_lr);
-        grid[i].aplus_r=alpha_plus(grid[i].v_rl, grid[i].v_rr);
-        grid[i].aminus_l=alpha_minus(grid[i].v_ll, grid[i].v_lr);
-        grid[i].aminus_r=alpha_minus(grid[i].v_rl, grid[i].v_rr);
-
-
-
-        hll(grid[i].Fi_l, grid[i].u_ll, grid[i].u_lr, grid[i].F_ll, grid[i].F_lr, grid[i].aplus_l, grid[i].aminus_l);
-        hll(grid[i].Fi_r, grid[i].u_rl, grid[i].u_rr, grid[i].F_rl, grid[i].F_rr, grid[i].aplus_r, grid[i].aminus_r);
-
-
-        //printf("%lf %lf\n", grid[i].aminus_l ,grid[i].Fi_l[0]);
-
-    }
-
-
+  for(i=0; i<ng; i++){
     for (j=0; j<n; j++){
-        grid[0].Fi_r[j]=grid[1].Fi_l[j];
-        grid[0].Fi_l[j]=grid[0].F[j];
+      
+      //tmp1 and tmp2 are indices used when we reach the edge of the grid
+      //tmp1=((i-1)<0)?0:(i-1);
+      //tmp2=((i+1)>ng-1)?ng-1:i+1;
+      //Computing left and right biased values for primitive, conservative and flux variables
+      grid[i].v_ll[j]=grid[i-1].v[j];
+      grid[i].v_lr[j]=grid[i].v[j];
+      grid[i].v_rl[j]=grid[i].v[j];
+      grid[i].v_rr[j]=grid[i+1].v[j];
+
+      grid[i].u_ll[j]=grid[i-1].u[j];
+      grid[i].u_lr[j]=grid[i].u[j];
+      grid[i].u_rl[j]=grid[i].u[j];
+      grid[i].u_rr[j]=grid[i+1].u[j];
+
+      grid[i].F_ll[j]=grid[i-1].F[j];
+      grid[i].F_lr[j]=grid[i].F[j];
+      grid[i].F_rl[j]=grid[i].F[j];
+      grid[i].F_rr[j]=grid[i+1].F[j];
+
+      //printf("%d\n", i);
+
     }
 
+
+    //Computing alpha's for each grid cell
+    grid[i].aplus_l=alpha_plus(grid[i].v_ll, grid[i].v_lr);
+    grid[i].aplus_r=alpha_plus(grid[i].v_rl, grid[i].v_rr);
+    grid[i].aminus_l=alpha_minus(grid[i].v_ll, grid[i].v_lr);
+    grid[i].aminus_r=alpha_minus(grid[i].v_rl, grid[i].v_rr);
+
+
+    //Call hll function to compute the fluxes at interfaces
+    hll(grid[i].Fi_l, grid[i].u_ll, grid[i].u_lr, grid[i].F_ll, grid[i].F_lr, grid[i].aplus_l, grid[i].aminus_l);
+    hll(grid[i].Fi_r, grid[i].u_rl, grid[i].u_rr, grid[i].F_rl, grid[i].F_rr, grid[i].aplus_r, grid[i].aminus_r);
+    //Calculate the time  derivative for conservative variables using the interface fluxes calculated above 
     for (j=0; j<n; j++){
-        grid[ng-1].Fi_l[j]=grid[ng-2].Fi_r[j];
-        grid[0].Fi_r[j]=grid[ng-1].F[j];
+      grid[i].L[j]= (-grid[i].Fi_r[j]+grid[i].Fi_l[j])/grid[i].delta_x;
     }
 
 
+    //printf("%lf %lf\n", grid[i].aminus_l ,grid[i].Fi_l[0]);
 
+  }
+}
+
+//Evolves our grid of values forward one time step delta_t 
+void evolve (struct cell* grid,  int ng, double delta_t){
+  //loop variable
+  int i,j=0;
+  
+  for (i=0; i<ng; i++){
+    for (j=0; j<n; j++){
+      //Update the conservative variables for now this is just simple Euler form.
+      grid[i].u[j]+=delta_t*grid[i].L[j];
+      
+    }
+    //Update fluxes and primitive variables in each cell 
+    to_prim(grid[i].u, grid[i].v);
+    to_flux(grid[i].v, grid[i].F);
+  }
+  
 }
 
 
 int main(int argc, char* argv[]){
-    FILE* out=fopen("hydro.txt", "w");
+  //File to which we write output
+  FILE* out=fopen("hydro.txt", "w");
 
-    //Loop variable
-    int i=0;
-    //Number of grid points
-    int ng=10;
-    //x boundaries of our numerical domain
-    double xmin=0;
-    double xmax=5;
-    //size of each of our cells
-    double delta_x=(xmax-xmin)/ng;
-
-    //Allocating our grid
-    struct cell* grid=malloc(ng*sizeof(struct cell));
-
-
-
-    //Initial condition
-    double rho_l=10;
-    double v_l=0;
-    double p_l=100;
-    double rho_r=1;
-    double v_r=0;
-    double p_r=1;
-    //Initializing grid using our initial condition
-    for(i=0; i<((ng)/2); i++){
-        grid[i].v[0]=rho_l;
-        grid[i].v[1]=v_l;
-        grid[i].v[2]=p_l;
-
-        to_cons(grid[i].v, grid[i].u);
-        to_flux(grid[i].v, grid[i].F);
+  //Loop variable
+  int i=0;
+  //Number of grid points
+  int ng=200;
+  //x boundaries of our numerical domain
+  double xmin=0;
+  double xmax=5;
+  //size of each of our cells
+  double delta_x=(xmax-xmin)/ng;
+  //Allocating our grid
+  struct cell* grid=malloc((ng+4)*sizeof(struct cell));
+  struct cell* grid2=&(grid[2]);
 
 
+
+  //Initial condition
+  double rho_l=10;
+  double v_l=0;
+  double p_l=100;
+  double rho_r=1;
+  double v_r=0;
+  double p_r=1;
+  //Initializing grid using our initial condition
+  for(i=0; i<((ng+4)/2); i++){
+    grid[i].v=malloc(n*sizeof(double));
+    grid[i].u=malloc(n*sizeof(double));
+    grid[i].F=malloc(n*sizeof(double));
+
+    grid[i].v[0]=rho_l;
+    grid[i].v[1]=v_l;
+    grid[i].v[2]=p_l;
+
+    to_cons(grid[i].v, grid[i].u);
+    to_flux(grid[i].v, grid[i].F);
+
+    grid[i].delta_x=delta_x;
+  }
+  printf("%d\n", i);
+  for (i=((ng+4)/2); i<(ng+4); i++){
+    grid[i].v=malloc(n*sizeof(double));
+    grid[i].u=malloc(n*sizeof(double));
+    grid[i].F=malloc(n*sizeof(double));
+
+    grid[i].v[0]=rho_r;
+    grid[i].v[1]=v_r;
+    grid[i].v[2]=p_r;
+
+    to_cons(grid[i].v, grid[i].u);
+    to_flux(grid[i].v, grid[i].F);
+
+    grid[i].delta_x=delta_x;
+  }
+  //The following lines should make bdry cells which behave like mirrors
+  grid[1].v=grid[1].v;
+  grid[ng].v=grid[ng-1].v;
+
+  grid[1].u=grid[2].u;
+  grid[ng].u=grid2[ng-1].u;
+
+  grid[1].F=grid[2].F;
+  grid[ng].F=grid2[ng-1].F;
+
+
+
+  //Calculate fluxes at interfaces
+  interfaces(grid2,ng);
+
+  printf("test\n");
+
+  //Calculate cfl time-step
+  double delta_t=cfl(grid2, ng, delta_x);
+  //Keeping track of time that went by
+  double t=0;
+  //Maximum time to which we would like to integrate
+  double tmax=0.4;
+  //Keep track of number of iterations
+  int iterations=0;
+
+  /* //Write the initial condition to output file */
+  /* for (i=0; i<ng; i++){ */
+  /*   fprintf(out, "%lf %lf %lf\n", t, delta_x*(i), (grid[i]).v[0]); */
+  /* } */
+  while((t<tmax)){
+    //Calculate time step
+    delta_t=cfl(grid2, ng, delta_x);
+    //If cfl time-step is bigger than the  
+    if (delta_t>(tmax-t)){
+      delta_t=tmax-t;
     }
-    printf("%d\n", i);
-    for (i=(ng/2); i<(ng); i++){
-        grid[i].v[0]=rho_r;
-        grid[i].v[1]=v_r;
-        grid[i].v[2]=p_r;
 
-        to_cons(grid[i].v, grid[i].u);
-        to_flux(grid[i].v, grid[i].F);
-    }
-    printf("test\n");
-    interfaces(grid,ng);
+    //Calculate fluxes at interfaces
+    interfaces(grid2,ng);
 
-    for (i=0; i<ng; i++){
-        printf("%lf\n", grid[i].Fi_l[1]);
-    }
+    //Evolve forward one-time step
+    evolve(grid2, ng, delta_t);
+    t+=delta_t;
+    iterations++;
 
+ 
 
-//    //Alpha's
-//    double aplus[ng-1], aminus[ng-1];
-//    //Time derivatives
-//    double L[ng*n];
-//    //Time step we are going to take
-//    double delta_t=0;
-//    //Keeping track of time that went by
-//    double t=0;
-//    //Maximum time to which we would like to integrate
-//    double tmax=0.4;
-//    //Keep track of number of iterations
-//    int iterations=0;
-//
-//    //Write the initial conditionto output file
-//    for (i=0; i<ng*n; i+=n){
-//        fprintf(out, "%lf %lf %lf\n", t, delta_x*(i/n), u[i]);
-//    }
-//    while((t<tmax)){
-//        //Calculate alpha at each grid point
-//        alpha_minus(u, aminus, ng);
-//        alpha_plus(u, aplus, ng);
-//        //Calculate time step
-//        delta_t=cfl(aplus, aminus, ng, delta_x);
-//        if (delta_t>(tmax-t)){
-//            delta_t=tmax-t;
-//        }
-//
-//
-//
-//
-//        //Evolve forward one time step
-//        Euler(t, u, L, delta_t, ng, delta_x, &derivs);
-//        t+=delta_t;
-//        iterations++;
-//
-//        //Write result to output file.
-//        for (i=0; i<ng*n; i+=n){
-//            fprintf(out, "%lf %lf %lf\n", t, delta_x*(i/n), u[i]);
-//        }
-//
-//    }
+  }
 
-    return 0;
+  //Write result to output file.
+  for (i=0; i<ng; i++){
+    fprintf(out, "%lf %lf %lf\n", t, delta_x*(i), (grid2[i]).v[0]);
+  }
+
+  return 0;
 }
 
 
