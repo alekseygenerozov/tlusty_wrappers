@@ -254,15 +254,15 @@ void interfaces(struct cell* grid, int ng){
 
 
 
-        grid[i].u_ll[j]=grid[i-1].u[j];
-        grid[i].u_lr[j]=grid[i].u[j];
-        grid[i].u_rl[j]=grid[i].u[j];
-        grid[i].u_rr[j]=grid[i+1].u[j];
+        /* grid[i].u_ll[j]=grid[i-1].u[j]; */
+        /* grid[i].u_lr[j]=grid[i].u[j]; */
+        /* grid[i].u_rl[j]=grid[i].u[j]; */
+        /* grid[i].u_rr[j]=grid[i+1].u[j]; */
 
-        grid[i].F_ll[j]=grid[i-1].F[j];
-        grid[i].F_lr[j]=grid[i].F[j];
-        grid[i].F_rl[j]=grid[i].F[j];
-        grid[i].F_rr[j]=grid[i+1].F[j];
+        /* grid[i].F_ll[j]=grid[i-1].F[j]; */
+        /* grid[i].F_lr[j]=grid[i].F[j]; */
+        /* grid[i].F_rl[j]=grid[i].F[j]; */
+        /* grid[i].F_rr[j]=grid[i+1].F[j]; */
 
     }
 
