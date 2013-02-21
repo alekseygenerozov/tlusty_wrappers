@@ -16,6 +16,8 @@ struct cell{
   double* u;
   double* v;
 
+  double u0[n];
+
   //Size of cell
   double delta_x;
 
@@ -64,15 +66,17 @@ double sgn(double x){
     if (x<0){
         return -1;
     }
-    else if(x==0){
-        return 0;
-    }
+//    else if(x==0){
+//        return 0;
+//    }
     return 1;
 }
 //Minmod function
 double minmod(double x, double y, double z){
     double tmp[3]={fabs(x), fabs(y), fabs(z)};
-    return (1./4.)*fabs(sgn(x)+sgn(y))*(sgn(x)+sgn(z))*min(tmp, 3);
+
+
+    return (1./4.)*abs(sgn(x)+sgn(y))*(sgn(x)+sgn(z))*min(tmp, 3);
 }
 
 
@@ -197,47 +201,12 @@ double plm_l(struct cell* grid, int i, int j){
   return grid[i].v[j]+0.5*minmod(theta*(grid[i].v[j]-grid[i-1].v[j]), 0.5*(grid[i+1].v[j]-grid[i-1].v[j]), theta*(grid[i+1].v[j]-grid[i].v[j]));
 }
 
+
 double plm_r(struct cell* grid, int i, int j){
   return grid[i+1].v[j]-0.5*minmod(theta*(grid[i+1].v[j]-grid[i].v[j]), 0.5*(grid[i+2].v[j]-grid[i].v[j]), theta*(grid[i+2].v[j]-grid[i+1].v[j]));
 }
 
 
-
-/*Forward euler scheme: given current solution vector and time it computes vector of derivatives and then
-evolves the solution vector forward by one time step*/
-void Euler(double t, double u[], double L[], double delta_t,  int ng, double delta_x, void(* myderivs)(double,  const double *, double *, int,  double)){
-
-}
-
-void ShuOsher(double t, double u[], double L[], double delta_t,  int ng, double delta_x, void(* myderivs)(double,  const double *, double *, int,  double)){
-    //Loop variable
-    int i=0;
-
-    //Store solution vectors at intermediate steps
-    double u1[ng*n], u2[ng*n];
-
-    //Calculate derivatives
-    myderivs(t, u, L, ng, delta_x);
-    for (i=0; i<ng*n; i++){
-        u1[i]=u[i]+delta_t*L[i];
-    }
-    /*Calculate derivatives with the new u
-      Note that the explicit value of time
-      passed to the derivatives function does not matter.
-      Formally, I should probably pass t + delta_t or something*/
-    myderivs(t, u1, L, ng, delta_x);
-    for (i=0; i<(ng*n); i++){
-        u2[i]=(3./4.)*u[i]+(1./4.)*u1[i]+(1./4.)*delta_t*L[i];
-    }
-    /*Calculate derivatives at u2. Note once again that the explicit
-    value of t does not matter.*/
-    myderivs(t, u2, L, ng, delta_x);
-    for (i=0; i<(ng*n); i++){
-        u[i]=(1./3.)*u[i]+(2./3.)*u2[i]+(2./3.)*delta_t*L[i];
-    }
-
-
-}
 
 double cfl(struct cell* grid, int ng, double delta_x){
     //Loop variable
@@ -268,24 +237,26 @@ void interfaces(struct cell* grid, int ng){
 
   for(i=0; i<ng; i++){
     for (j=0; j<n; j++){
-      //Computing left and right biased values for primitive, conservative and flux variables
-      grid[i].v_ll[j]=plm_l(grid, i-1, j);
-      grid[i].v_rl[j]=plm_l(grid, i, j);
-      grid[i].v_lr[j]=plm_r(grid, i-1, j);
-      grid[i].v_rr[j]=plm_r(grid, i, j);
-      //Caculating left and right biased values of conservative variables
-      to_cons(grid[i].v_ll, grid[i].u_ll);
-      to_cons(grid[i].v_rl, grid[i].u_rl);
-      to_cons(grid[i].v_lr, grid[i].u_lr);
-      to_cons(grid[i].v_rr, grid[i].u_rr);
-      //Caculating left and right biased values of fluxes
-      to_flux(grid[i].v_ll, grid[i].F_ll);
-      to_flux(grid[i].v_rl, grid[i].F_rl);
-      to_flux(grid[i].v_lr, grid[i].F_lr);
-      to_flux(grid[i].v_rr, grid[i].F_rr);
+        //Computing left and right biased values for primitive, conservative and flux variables
+        grid[i].v_ll[j]=grid[i-1].v[j];
+        grid[i].v_lr[j]=grid[i].v[j];
+        grid[i].v_rl[j]=grid[i].v[j];
+        grid[i].v_rr[j]=grid[i+1].v[j];
+
+
+
+        grid[i].u_ll[j]=grid[i-1].u[j];
+        grid[i].u_lr[j]=grid[i].u[j];
+        grid[i].u_rl[j]=grid[i].u[j];
+        grid[i].u_rr[j]=grid[i+1].u[j];
+
+        grid[i].F_ll[j]=grid[i-1].F[j];
+        grid[i].F_lr[j]=grid[i].F[j];
+        grid[i].F_rl[j]=grid[i].F[j];
+        grid[i].F_rr[j]=grid[i+1].F[j];
+
     }
-    printf("%lf %lf %lf %lf\n", grid[i].v_ll[0], grid[i].v_lr[0],  grid[i].v_rl[0], grid[i].v_rr[0]);
-    printf("test %d %lf %lf %lf %lf\n", i, theta*(grid[i+1].v[0]-grid[i].v[0]),  0.5*(grid[i+2].v[0]-grid[i].v[0]), theta*(grid[i+2].v[0]-grid[i+1].v[0]), minmod(theta*(grid[i+1].v[0]-grid[i].v[0]), 0.5*(grid[i+2].v[0]-grid[i].v[0]), theta*(grid[i+2].v[0]-grid[i+1].v[0])));
+
 
     //Computing alpha's for each grid cell
     grid[i].aplus_l=alpha_plus(grid[i].v_ll, grid[i].v_lr);
@@ -308,35 +279,79 @@ void interfaces(struct cell* grid, int ng){
   }
 }
 
-//Evolves our grid of values forward one time step delta_t 
+//Shu Osher implementation
+void ShuOsher(struct cell* grid, int ng,  double delta_t){
+    //declare loop variables
+    int i,j=0;
+
+
+    //Take first step and store initial values of conservative variable in u0
+    interfaces(grid, ng);
+    for (i=0; i<ng; i++){
+        for (j=0; j<n; j++){
+            grid[i].u0[j]=grid[i].u[j];
+            grid[i].u[j]+=delta_t*grid[i].L[j];
+        }
+        //Update fluxes and primitive variables in each cell
+        to_prim(grid[i].u, grid[i].v);
+        to_flux(grid[i].v, grid[i].F);
+    }
+    //Update the grid after first step note that the initial values of the conservative variables are stored in member u0 for each cell.
+    interfaces(grid, ng);
+    for (i=0; i<ng; i++){
+        for (j=0; j<n; j++){
+            grid[i].u[j]=(3./4.)*grid[i].u0[j]+(1./4.)*grid[i].u[j]+(1./4.)*delta_t*grid[i].L[j];
+        }
+        //Update fluxes and primitive variables in each cell
+        to_prim(grid[i].u, grid[i].v);
+        to_flux(grid[i].v, grid[i].F);
+    }
+
+    //Now take the final step
+    interfaces(grid, ng);
+    for (i=0; i<ng; i++){
+        for (j=0; j<n; j++){
+            grid[i].u[j]=(1./3.)*grid[i].u0[j]+(2./3.)*grid[i].u[j]+(2./3.)*delta_t*grid[i].L[j];
+        }
+        //Update fluxes and primitive variables in each cell
+        to_prim(grid[i].u, grid[i].v);
+        to_flux(grid[i].v, grid[i].F);
+    }
+
+
+
+}
+
+//Evolves our grid of values forward one time step delta_t
 void evolve (struct cell* grid,  int ng, double delta_t){
   //loop variable
   int i,j=0;
-  
-  for (i=0; i<ng; i++){
-    for (j=0; j<n; j++){
-      //Update the conservative variables for now this is just simple Euler form.
-      grid[i].u[j]+=delta_t*grid[i].L[j];
-      
-    }
-    //Update fluxes and primitive variables in each cell 
-    to_prim(grid[i].u, grid[i].v);
-    to_flux(grid[i].v, grid[i].F);
-  }
-  
+
+  ShuOsher(grid, ng, delta_t);
+
+//  for (i=0; i<ng; i++){
+//    for (j=0; j<n; j++){
+//      //Update the conservative variables for now this is just simple Euler form.
+//      grid[i].u[j]+=delta_t*grid[i].L[j];
+
+//    }
+    //Update fluxes and primitive variables in each cell
+//    to_prim(grid[i].u, grid[i].v);
+//    to_flux(grid[i].v, grid[i].F);
+//}
+
 }
+
 
 
 int main(int argc, char* argv[]){
   //File to which we write output
   FILE* out=fopen("hydro.txt", "w");
 
-  printf("%lf\n", minmod(1,2, 3));
-
   //Loop variable
   int i=0;
   //Number of grid points
-  int ng=100;
+  int ng=200;
   //x boundaries of our numerical domain
   double xmin=0;
   double xmax=1;
@@ -370,7 +385,7 @@ int main(int argc, char* argv[]){
 
     grid[i].delta_x=delta_x;
   }
-  //printf("%d\n", (ng+4)/2);
+
   for (i=((ng+4)/2); i<(ng+4); i++){
     grid[i].v=malloc(n*sizeof(double));
     grid[i].u=malloc(n*sizeof(double));
@@ -418,11 +433,8 @@ int main(int argc, char* argv[]){
   //Keep track of number of iterations
   int iterations=0;
 
-//  //Write result to output file.
-//  for (i=0; i<ng; i++){
-//      fprintf(out, "%lf %lf %lf\n", t, delta_x*(i+(1./2.)), (grid2[i]).v[0]);
-//  }
-  while((t<tmax)/*&&(iterations<2)*/){
+
+  while((t<tmax)){
     //Calculate time step
     delta_t=cfl(grid2, ng, delta_x);
     //If cfl time-step is bigger than the  
@@ -431,28 +443,21 @@ int main(int argc, char* argv[]){
     }
 
     //Calculate fluxes at interfaces
-    interfaces(grid2,ng);
+    //interfaces(grid2,ng);
 
     //Evolve forward one-time step
     evolve(grid2, ng, delta_t);
     t+=delta_t;
     iterations++;
 
-//    //Write result to output file.
-//    for (i=0; i<ng; i++){
-//        fprintf(out, "%lf %lf %lf\n", t, delta_x*(i+(1./2.)), (grid2[i]).v[0]);
-//    }
- 
+
 
   }
 
-  /* //Write result to output file. */
+ //Write result to output file.
       for (i=0; i<ng; i++){
           fprintf(out, "%lf %lf %lf\n", t, delta_x*(i+(1./2.)), (grid2[i]).v[0]);
       }
-  /* for (i=0; i<ng; i++){ */
-  /*   fprintf(out, "%lf %lf %lf\n", t, delta_x*(i), (grid2[i]).v[0]); */
-  /* } */
 
   return 0;
 }
