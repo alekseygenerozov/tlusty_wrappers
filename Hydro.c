@@ -64,16 +64,17 @@ double sgn(double x){
     if (x<0){
         return -1;
     }
+    else if(x==0){
+        return 0;
+    }
     return 1;
 }
 //Minmod function
 double minmod(double x, double y, double z){
     double tmp[3]={fabs(x), fabs(y), fabs(z)};
-
-
-    return (1./4.)*abs(sgn(x)+sgn(y))*(sgn(x)+sgn(z))*min(tmp, 3);
-
+    return (1./4.)*fabs(sgn(x)+sgn(y))*(sgn(x)+sgn(z))*min(tmp, 3);
 }
+
 
 
 //void plm(const double c[], double c1, char x){
@@ -190,73 +191,17 @@ void hll(double F_i[], const double u_l[], const double u_r[], const double F_l[
       F_i[i]=(aplus*F_l[i]+aminus*F_r[i]-(aplus*aminus)*(u_r[i]-u_l[i]))/(aplus+aminus);
       
     }
-    //printf("%lf\n", F_i[0]);
+}
+//plm functions for calculating left and right biased values
+double plm_l(struct cell* grid, int i, int j){
+  return grid[i].v[j]+0.5*minmod(theta*(grid[i].v[j]-grid[i-1].v[j]), 0.5*(grid[i+1].v[j]-grid[i-1].v[j]), theta*(grid[i+1].v[j]-grid[i].v[j]));
+}
+
+double plm_r(struct cell* grid, int i, int j){
+  return grid[i+1].v[j]-0.5*minmod(theta*(grid[i+1].v[j]-grid[i].v[j]), 0.5*(grid[i+2].v[j]-grid[i].v[j]), theta*(grid[i+2].v[j]-grid[i+1].v[j]));
 }
 
 
-//void derivs(double t, const double u[], double L[], int ng, double delta_x){
-//
-//    //Loop variables
-//    int i=0;
-//    int j=0;
-//
-//
-//    double F[ng*n];
-//    //Calculating the flux at each of the grid points
-//    flux(u, F, ng);
-//
-//    //Flux and u with 2 ghost cells appended
-//    double F_ghost[(ng+4)*n];
-//    double u_ghost[(ng+4)*n];
-//    //Filling in our second flux vector with ghost cells
-//    for(i=0; i<(ng+4)*n; i++){
-//        //Boundary cells
-//        if (i<2*n){
-//            F_ghost[i]=F[i%3];
-//            u_ghost[i]=u[i%3];
-//        }
-//        else if (i>((ng+2)*n)-1){
-//            F_ghost[i]=F[(ng*n)-3+(i%3)];
-//            u_ghost[i]=u[(ng*n)-3+(i%3)];
-//        }
-//        //Middle cells
-//        else{
-//            F_ghost[i]=F[i-(2*n)];
-//            u_ghost[i]=u[i-(2*n)];
-//        }
-//    }
-//
-//
-//
-//
-//
-//
-//
-//    double aplus[ng+3], aminus[ng+3];
-//    alpha_plus(u_ghost,  aplus, ng+4);
-//    alpha_minus(u_ghost, aminus, ng+4);
-//
-//    //Loop variable
-//    int k=0;
-//
-//    //For each of the grid points. N.B. The index i represents the index of the grid point.
-//    for (i=0; i<ng; i++){
-//        //For each of the three variables.
-//        for (j=0; j<n; j++){
-//            double Fi_down=hll(&(u_ghost[2*n]), &(F_ghost[2*n]), &(aplus[2]), &(aminus[2]), i-1, j, ng);
-//            double Fi_up=hll(&(u_ghost[2*n]), &(F_ghost[2*n]), &(aplus[2]), &(aminus[2]), i, j, ng);
-//            //Time derivative
-//            L[(n*i)+j]=-(Fi_up-Fi_down)/(delta_x);
-//            //printf("%d %lf %lf %lf\n", i+j, L[(n*i)+j], Fi_up, Fi_down);
-//
-//
-//
-//        }
-//    }
-//    //printf("\n");
-//
-//
-//}
 
 /*Forward euler scheme: given current solution vector and time it computes vector of derivatives and then
 evolves the solution vector forward by one time step*/
@@ -323,30 +268,24 @@ void interfaces(struct cell* grid, int ng){
 
   for(i=0; i<ng; i++){
     for (j=0; j<n; j++){
-      
-      //tmp1 and tmp2 are indices used when we reach the edge of the grid
-      //tmp1=((i-1)<0)?0:(i-1);
-      //tmp2=((i+1)>ng-1)?ng-1:i+1;
       //Computing left and right biased values for primitive, conservative and flux variables
-      grid[i].v_ll[j]=grid[i-1].v[j];
-      grid[i].v_lr[j]=grid[i].v[j];
-      grid[i].v_rl[j]=grid[i].v[j];
-      grid[i].v_rr[j]=grid[i+1].v[j];
-
-      grid[i].u_ll[j]=grid[i-1].u[j];
-      grid[i].u_lr[j]=grid[i].u[j];
-      grid[i].u_rl[j]=grid[i].u[j];
-      grid[i].u_rr[j]=grid[i+1].u[j];
-
-      grid[i].F_ll[j]=grid[i-1].F[j];
-      grid[i].F_lr[j]=grid[i].F[j];
-      grid[i].F_rl[j]=grid[i].F[j];
-      grid[i].F_rr[j]=grid[i+1].F[j];
-
-      //printf("%d\n", i);
-
+      grid[i].v_ll[j]=plm_l(grid, i-1, j);
+      grid[i].v_rl[j]=plm_l(grid, i, j);
+      grid[i].v_lr[j]=plm_r(grid, i-1, j);
+      grid[i].v_rr[j]=plm_r(grid, i, j);
+      //Caculating left and right biased values of conservative variables
+      to_cons(grid[i].v_ll, grid[i].u_ll);
+      to_cons(grid[i].v_rl, grid[i].u_rl);
+      to_cons(grid[i].v_lr, grid[i].u_lr);
+      to_cons(grid[i].v_rr, grid[i].u_rr);
+      //Caculating left and right biased values of fluxes
+      to_flux(grid[i].v_ll, grid[i].F_ll);
+      to_flux(grid[i].v_rl, grid[i].F_rl);
+      to_flux(grid[i].v_lr, grid[i].F_lr);
+      to_flux(grid[i].v_rr, grid[i].F_rr);
     }
-
+    printf("%lf %lf %lf %lf\n", grid[i].v_ll[0], grid[i].v_lr[0],  grid[i].v_rl[0], grid[i].v_rr[0]);
+    printf("test %d %lf %lf %lf %lf\n", i, theta*(grid[i+1].v[0]-grid[i].v[0]),  0.5*(grid[i+2].v[0]-grid[i].v[0]), theta*(grid[i+2].v[0]-grid[i+1].v[0]), minmod(theta*(grid[i+1].v[0]-grid[i].v[0]), 0.5*(grid[i+2].v[0]-grid[i].v[0]), theta*(grid[i+2].v[0]-grid[i+1].v[0])));
 
     //Computing alpha's for each grid cell
     grid[i].aplus_l=alpha_plus(grid[i].v_ll, grid[i].v_lr);
@@ -392,13 +331,15 @@ int main(int argc, char* argv[]){
   //File to which we write output
   FILE* out=fopen("hydro.txt", "w");
 
+  printf("%lf\n", minmod(1,2, 3));
+
   //Loop variable
   int i=0;
   //Number of grid points
-  int ng=200;
+  int ng=100;
   //x boundaries of our numerical domain
   double xmin=0;
-  double xmax=5;
+  double xmax=1;
   //size of each of our cells
   double delta_x=(xmax-xmin)/ng;
   //Allocating our grid
@@ -408,12 +349,12 @@ int main(int argc, char* argv[]){
 
 
   //Initial condition
-  double rho_l=10;
+  double rho_l=1;
   double v_l=0;
-  double p_l=100;
-  double rho_r=1;
+  double p_l=1;
+  double rho_r=0.1;
   double v_r=0;
-  double p_r=1;
+  double p_r=0.125;
   //Initializing grid using our initial condition
   for(i=0; i<((ng+4)/2); i++){
     grid[i].v=malloc(n*sizeof(double));
@@ -429,7 +370,7 @@ int main(int argc, char* argv[]){
 
     grid[i].delta_x=delta_x;
   }
-  printf("%d\n", i);
+  //printf("%d\n", (ng+4)/2);
   for (i=((ng+4)/2); i<(ng+4); i++){
     grid[i].v=malloc(n*sizeof(double));
     grid[i].u=malloc(n*sizeof(double));
@@ -445,16 +386,23 @@ int main(int argc, char* argv[]){
     grid[i].delta_x=delta_x;
   }
   //The following lines should make bdry cells which behave like mirrors
-  grid[1].v=grid[1].v;
+  grid[1].v=grid[2].v;
+  grid[0].v=grid[2].v;
   grid[ng].v=grid[ng-1].v;
+  grid[ng+1].v=grid[ng-1].v;
 
   grid[1].u=grid[2].u;
-  grid[ng].u=grid2[ng-1].u;
+  grid[0].u=grid[2].u;
+  grid[ng].u=grid[ng-1].u;
+  grid[ng+1].u=grid[ng-1].u;
 
   grid[1].F=grid[2].F;
-  grid[ng].F=grid2[ng-1].F;
+  grid[0].F=grid[2].F;
+  grid[ng].F=grid[ng-1].F;
+  grid[ng+1].F=grid[ng-1].F;
 
 
+  
 
   //Calculate fluxes at interfaces
   interfaces(grid2,ng);
@@ -466,15 +414,15 @@ int main(int argc, char* argv[]){
   //Keeping track of time that went by
   double t=0;
   //Maximum time to which we would like to integrate
-  double tmax=0.4;
+  double tmax=0.2;
   //Keep track of number of iterations
   int iterations=0;
 
-  /* //Write the initial condition to output file */
-  /* for (i=0; i<ng; i++){ */
-  /*   fprintf(out, "%lf %lf %lf\n", t, delta_x*(i), (grid[i]).v[0]); */
-  /* } */
-  while((t<tmax)){
+//  //Write result to output file.
+//  for (i=0; i<ng; i++){
+//      fprintf(out, "%lf %lf %lf\n", t, delta_x*(i+(1./2.)), (grid2[i]).v[0]);
+//  }
+  while((t<tmax)/*&&(iterations<2)*/){
     //Calculate time step
     delta_t=cfl(grid2, ng, delta_x);
     //If cfl time-step is bigger than the  
@@ -490,14 +438,21 @@ int main(int argc, char* argv[]){
     t+=delta_t;
     iterations++;
 
+//    //Write result to output file.
+//    for (i=0; i<ng; i++){
+//        fprintf(out, "%lf %lf %lf\n", t, delta_x*(i+(1./2.)), (grid2[i]).v[0]);
+//    }
  
 
   }
 
-  //Write result to output file.
-  for (i=0; i<ng; i++){
-    fprintf(out, "%lf %lf %lf\n", t, delta_x*(i), (grid2[i]).v[0]);
-  }
+  /* //Write result to output file. */
+      for (i=0; i<ng; i++){
+          fprintf(out, "%lf %lf %lf\n", t, delta_x*(i+(1./2.)), (grid2[i]).v[0]);
+      }
+  /* for (i=0; i<ng; i++){ */
+  /*   fprintf(out, "%lf %lf %lf\n", t, delta_x*(i), (grid2[i]).v[0]); */
+  /* } */
 
   return 0;
 }
