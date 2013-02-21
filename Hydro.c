@@ -76,7 +76,7 @@ double minmod(double x, double y, double z){
     double tmp[3]={fabs(x), fabs(y), fabs(z)};
 
 
-    return (1./4.)*abs(sgn(x)+sgn(y))*(sgn(x)+sgn(z))*min(tmp, 3);
+    return (1./4.)*fabs(sgn(x)+sgn(y))*(sgn(x)+sgn(z))*min(tmp, 3);
 }
 
 
@@ -238,10 +238,19 @@ void interfaces(struct cell* grid, int ng){
   for(i=0; i<ng; i++){
     for (j=0; j<n; j++){
         //Computing left and right biased values for primitive, conservative and flux variables
-        grid[i].v_ll[j]=grid[i-1].v[j];
-        grid[i].v_lr[j]=grid[i].v[j];
-        grid[i].v_rl[j]=grid[i].v[j];
-        grid[i].v_rr[j]=grid[i+1].v[j];
+        grid[i].v_ll[j]=plm_l(grid, i-1, j);
+        grid[i].v_rl[j]=plm_l(grid, i, j);
+        grid[i].v_lr[j]=plm_r(grid, i-1, j);
+        grid[i].v_rr[j]=plm_r(grid, i, j);
+        to_cons(grid[i].v_ll, grid[i].u_ll);
+        to_cons(grid[i].v_rl, grid[i].u_rl);
+        to_cons(grid[i].v_lr, grid[i].u_lr);
+        to_cons(grid[i].v_rr, grid[i].u_rr);
+        //Caculating left and right biased values of fluxes
+        to_flux(grid[i].v_ll, grid[i].F_ll);
+        to_flux(grid[i].v_rl, grid[i].F_rl);
+        to_flux(grid[i].v_lr, grid[i].F_lr);
+        to_flux(grid[i].v_rr, grid[i].F_rr);
 
 
 
