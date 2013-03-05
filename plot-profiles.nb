@@ -1,3 +1,22 @@
+(* Content-type: application/mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 7.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       145,          7]
+NotebookDataLength[     22425,        625]
+NotebookOptionsPosition[     21592,        592]
+NotebookOutlinePosition[     21957,        608]
+CellTagsIndexPosition[     21914,        605]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
 Notebook[{
 Cell[BoxData[
  RowBox[{"\[IndentingNewLine]", 
@@ -42,8 +61,31 @@ Cell[BoxData[
     RowBox[{"\[Mu]0", "=", "0.615"}], ";"}], "\[IndentingNewLine]", 
    RowBox[{
     RowBox[{"\[Kappa]es", "=", 
-     RowBox[{"0.4", " ", "\[Mu]e"}]}], ";"}]}]}]], "Input",
- InitializationCell->True],
+     RowBox[{"0.4", " ", "\[Mu]e"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Rs", "=", 
+     RowBox[{"2", " ", "G", " ", 
+      FractionBox["M", 
+       SuperscriptBox["c", "2"]]}]}], ";"}]}]}]], "Input",
+ InitializationCell->True,
+ CellChangeTimes->{{3.570979079481103*^9, 3.570979087568396*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{"G", " ", 
+   FractionBox["M", 
+    SuperscriptBox[
+     RowBox[{"(", 
+      RowBox[{"500", " ", "Rs"}], ")"}], "3"]]}]}]], "Input",
+ CellChangeTimes->{{3.57143172500772*^9, 3.571431737687077*^9}}],
+
+Cell[BoxData["4.096527448419718`*^-13"], "Output",
+ CellChangeTimes->{3.571431738802444*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
 
 Cell[BoxData[{
  RowBox[{"SetDirectory", "[", 
@@ -91,14 +133,32 @@ Cell[BoxData[{
   "\[IndentingNewLine]", "\[IndentingNewLine]", 
   "\[IndentingNewLine]"}], "\[IndentingNewLine]"}], "Input"],
 
+Cell[BoxData["\<\"/home/aleksey/Dropbox/First_Year_Project\"\>"], "Output",
+ CellChangeTimes->{3.571432190841235*^9, 3.5714331031166162`*^9}]
+}, Open  ]],
+
 Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"8.", " ", 
+    SuperscriptBox["10", 
+     RowBox[{"-", "13"}]]}], "//", "ToString"}]}]], "Input",
+ CellChangeTimes->{{3.5714327123463163`*^9, 3.571432717838686*^9}, {
+  3.571432750984334*^9, 3.571432759088189*^9}}],
+
+Cell[BoxData["\<\"     -13\\n8. 10\"\>"], "Output",
+ CellChangeTimes->{
+  3.571432718147914*^9, {3.571432752926524*^9, 3.571432759764758*^9}}]
+}, Open  ]],
 
 Cell[BoxData[{
  RowBox[{
   RowBox[{
    RowBox[{"SetOptions", "[", 
     RowBox[{"ListLinePlot", ",", 
-     RowBox[{"ImageSize", "\[Rule]", "Medium"}]}], "]"}], ";", "Z"}], 
+     RowBox[{"ImageSize", "\[Rule]", "Medium"}]}], "]"}], ";"}], 
   "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{
@@ -125,7 +185,7 @@ Cell[BoxData[{
       " ", "Teff", ",", " ", "t1", ",", " ", "t2", ",", " ", "t4", ",", "t3", 
       ",", "  ", "Tc", ",", " ", "u0", ",", " ", "thigh", ",", " ", "tlow", 
       ",", " ", "profile", ",", " ", "umax", ",", " ", "ustar", ",", " ", 
-      "myustar"}], "}"}], ",", "\[IndentingNewLine]", 
+      "myustar", ",", " ", "Q"}], "}"}], ",", "\[IndentingNewLine]", 
     RowBox[{
      RowBox[{"MyFileP", "=", 
       RowBox[{
@@ -169,6 +229,8 @@ Cell[BoxData[{
        RowBox[{"G", " ", 
         FractionBox["M", 
          SuperscriptBox["R", "3"]]}]]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Q", "=", 
+      SuperscriptBox["\[CapitalOmega]", "2"]}], ";", "\[IndentingNewLine]", 
      RowBox[{"(*", 
       RowBox[{"Central", " ", "sound", " ", "speed"}], "*)"}], 
      "\[IndentingNewLine]", 
@@ -412,8 +474,9 @@ Cell[BoxData[{
                    RowBox[{
                    "\"\<u\>\"", ",", " ", 
                     "\"\<\!\(\*SubscriptBox[\(\[Del]\), \
-\(ad\)]\)-\!\(\*SubscriptBox[\(\[Del]\), \(rad\)]\)\>\""}], "}"}]}]}], 
-                "]"}]}], "}"}]}], "}"}], "\[IndentingNewLine]", ",", " ", 
+\(ad\)]\)-\!\(\*SubscriptBox[\(\[Del]\), \(rad\)]\)\>\""}], "}"}]}], ",", " ", 
+                 RowBox[{"PlotRange", "\[Rule]", "All"}]}], "]"}]}], "}"}]}], 
+            "}"}], "\[IndentingNewLine]", ",", " ", 
            RowBox[{"Frame", "\[Rule]", "All"}]}], "]"}], ",", 
          RowBox[{"\"\<r=\>\"", "<>", 
           RowBox[{"ToString", "[", 
@@ -421,11 +484,20 @@ Cell[BoxData[{
             RowBox[{"[", "3", "]"}], "]"}], "]"}], "<>", " ", 
           "\"\< ustar=\>\"", "<>", 
           RowBox[{"ToString", "[", "ustar", "]"}], "<>", "\"\< \>\"", "<>", 
-          RowBox[{"ToString", "[", "myustar", "]"}]}]}], "]"}]}], "]"}]}]}], 
-   "\[IndentingNewLine]", "]"}]}], "\n"}], "Input"],
-
-Cell[BoxData["Z"], "Output"]
-}, Open  ]],
+          RowBox[{"ToString", "[", "myustar", "]"}], " ", "<>", 
+          "\"\< Teff=\>\"", "<>", 
+          RowBox[{"ToString", "[", "Teff", "]"}], "<>", " ", 
+          "\"\< Log[Q]=\>\"", "<>", 
+          RowBox[{"ToString", "[", 
+           RowBox[{"Log", "[", 
+            RowBox[{"10", ",", " ", "Q"}], "]"}], "]"}]}]}], "]"}]}], 
+      "]"}]}]}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   "]"}]}], "\n"}], "Input",
+ CellChangeTimes->{{3.571432155122837*^9, 3.571432200509473*^9}, {
+  3.571432488230041*^9, 3.571432555277742*^9}, {3.571432606170352*^9, 
+  3.571432612208868*^9}, {3.571432671257842*^9, 3.571432676069914*^9}, {
+  3.5714327644980392`*^9, 3.5714329056115427`*^9}, {3.571433080142256*^9, 
+  3.5714330849331083`*^9}}],
 
 Cell[CellGroupData[{
 
@@ -492,7 +564,12 @@ Cell[BoxData[
    
    RowBox[{"f", "[", 
     RowBox[{"\<\"profile-23837-0.1-1900\"\>", ",", "\<\"s\"\>"}], "]"}]}], 
-  "}"}]], "Output"],
+  "}"}]], "Output",
+ CellChangeTimes->{
+  3.5714322068045673`*^9, 3.571432565807132*^9, 3.57143262680199*^9, 
+   3.571432683873891*^9, 3.5714327823383083`*^9, {3.571432823386076*^9, 
+   3.571432846618251*^9}, {3.571432889633957*^9, 3.571432908326079*^9}, {
+   3.571433096270609*^9, 3.571433111698471*^9}}],
 
 Cell[BoxData[
  RowBox[{"{", 
@@ -505,7 +582,12 @@ Cell[BoxData[
    ",", "\<\"plot-m.pdf\"\>", ",", "\<\"plot-n.pdf\"\>", 
    ",", "\<\"plot-o.pdf\"\>", ",", "\<\"plot-p.pdf\"\>", 
    ",", "\<\"plot-q.pdf\"\>", ",", "\<\"plot-r.pdf\"\>", 
-   ",", "\<\"plot-s.pdf\"\>"}], "}"}]], "Output"]
+   ",", "\<\"plot-s.pdf\"\>"}], "}"}]], "Output",
+ CellChangeTimes->{
+  3.5714322068045673`*^9, 3.571432565807132*^9, 3.57143262680199*^9, 
+   3.571432683873891*^9, 3.5714327823383083`*^9, {3.571432823386076*^9, 
+   3.571432846618251*^9}, {3.571432889633957*^9, 3.571432908326079*^9}, {
+   3.571433096270609*^9, 3.571433117371599*^9}}]
 }, Open  ]]
 },
 AutoGeneratedPackage->None,
@@ -514,4 +596,39 @@ WindowMargins->{{58, Automatic}, {Automatic, 24}},
 FrontEndVersion->"7.0 for Linux x86 (64-bit) (February 25, 2009)",
 StyleDefinitions->"Default.nb"
 ]
+(* End of Notebook Content *)
 
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[545, 20, 1669, 50, 310, "Input",
+ InitializationCell->True],
+Cell[CellGroupData[{
+Cell[2239, 74, 254, 7, 71, "Input"],
+Cell[2496, 83, 92, 1, 31, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2625, 89, 1443, 44, 297, "Input"],
+Cell[4071, 135, 141, 1, 31, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4249, 141, 284, 7, 55, "Input"],
+Cell[4536, 150, 142, 2, 52, "Output"]
+}, Open  ]],
+Cell[4693, 155, 13340, 344, 1649, "Input"],
+Cell[CellGroupData[{
+Cell[18058, 503, 331, 10, 77, "Input"],
+Cell[18392, 515, 2293, 56, 212, "Output"],
+Cell[20688, 573, 888, 16, 92, "Output"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
