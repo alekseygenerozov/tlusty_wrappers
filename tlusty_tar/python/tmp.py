@@ -12,6 +12,7 @@ def bash_command(cmd):
      process.wait()
 
 
+
 ##Setup input file for tlusty
 def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model):
         #files to which we will write input for tlusty
@@ -39,15 +40,24 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model):
         loc='t' + str(log_teff*10) + 'm' + str(log_dmtot*10) + 'q' + str(log_qgrav*10)
         bash_command("mkdir " + loc)
 
-        #If there is an input specified copy the corresponding model atmosphere to the current directory
-        if inp_model != '':
-            bash_command('cp ' + inp_model + '/fort.7 ' './fort.8')
+
+
+
+
 
 
 ##Run TLUSTY from the bash shell
 def run():
     cmd="./t202 <fort.5 >fort.6"
-    bash_command(cmd)
+    process=subprocess.Popen(['/bin/bash', '-c', cmd])
+    #Wait for the process to finish
+    process.wait()
+    #report any problems that occur while reading the line
+    # while True:
+    #     line = process.stdout.readline()
+    #     if not line:
+    #         break
+    #     print line
 
 
 ##Construct tlusty model from scratch
