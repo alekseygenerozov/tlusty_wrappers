@@ -1,11 +1,8 @@
 import argparse
 import numpy as np
-
 import subprocess
-
 import astropy.table as at
 from astropy.io import ascii
-
 from types import*
 
 ##Run a command from the bash shell
