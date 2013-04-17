@@ -79,6 +79,8 @@ def clean(outdir,maxchange,nlte):
     else:
         dest=dest + outdir + '/nconv'
     print(dest)
+    #delete any files in the destination folder (i.e. from a previous run of tlusty)
+    bash_command('rm -f ' + dest + '/*')
     bash_command('mkdir -p ' + dest)
     #moving all tlusty i/o files to the destination
     bash_command('mv ' + 'fort* ' + dest)
