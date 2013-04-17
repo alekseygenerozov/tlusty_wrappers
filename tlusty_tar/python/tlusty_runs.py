@@ -36,7 +36,7 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model):
         f5.write(tail) 
 
         #Create a folder in which to store the tlusty output in 
-        loc='t' + str(log_teff*10) + 'm' + str(log_dmtot*10) + 'q' + str(log_qgrav*10)
+        loc='t' + str(int(log_teff*10)) + 'm' + str(int(log_dmtot*10)) + 'q' + str(int(log_qgrav*10))
         bash_command("mkdir " + loc)
 
         #If the location of the input model is not blank then copy model atmosphere to the current directory
@@ -53,7 +53,8 @@ def run():
 ##Construct tlusty model from scratch
 def tlusty_runs(nlte=False):
     #read in list of parameters and extract the input parameters
-    params=ascii.read('params.in', fill_values='')
+    params=ascii.read('params.in')
+    #params=ascii.read('params.in')
     #number of columns for our table
     ncols=len(params.columns)
 
@@ -73,7 +74,7 @@ def tlusty_runs(nlte=False):
 
         if ncols>3:
             inp_model=params[i][3]
-        if inp_model != '':
+        if inp_model:
             ltg='F'
 
         print lte, ltg, inp_model
