@@ -39,8 +39,8 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model):
         loc='t' + str(log_teff*10) + 'm' + str(log_dmtot*10) + 'q' + str(log_qgrav*10)
         bash_command("mkdir " + loc)
 
-        #If there is an input specified copy the corresponding model atmosphere to the current directory
-        if inp_model != '':
+        #If the location of the input model is not blank then copy model atmosphere to the current directory
+        if inp_model:
             bash_command('cp ' + inp_model + '/fort.7 ' './fort.8')
 
 
