@@ -44,10 +44,23 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model):
             bash_command('cp ' + inp_model + '/fort.7 ' './fort.8')
 
 
+
 ##Run TLUSTY from the bash shell
 def run():
     cmd="./t202 <fort.5 >fort.6"
     bash_command(cmd)
+
+
+def reltot(file='fort.9'):
+    dat=ascii.read(file, header_start=1)
+    niter= dat['ITER'][-1]
+    maxchange= dat['MAXIMUM'][-1]
+
+    print niter, maxchange
+    return maxchange
+
+    
+
 
 
 ##Construct tlusty model from scratch
@@ -81,6 +94,7 @@ def tlusty_runs(nlte=False):
 
         setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model)
         run()
+        reltot()
 
 
 ##driver; parse user input
