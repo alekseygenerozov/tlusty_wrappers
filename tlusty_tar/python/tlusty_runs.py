@@ -6,6 +6,8 @@ import subprocess
 import astropy.table as at
 from astropy.io import ascii
 
+from types import*
+
 ##Run a command from the bash shell
 def bash_command(cmd):
      process=subprocess.Popen(['/bin/bash', '-c', cmd],  stdout=subprocess.PIPE)
@@ -37,11 +39,13 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model):
 
         #Create a folder in which to store the tlusty output in 
         loc='t' + str(int(log_teff*10)) + 'm' + str(int(log_dmtot*10)) + 'q' + str(int(log_qgrav*10))
-        bash_command("mkdir " + loc)
+        bash_command('mkdir -p ' + loc)
 
         #If the location of the input model is not blank then copy model atmosphere to the current directory
         if inp_model:
             bash_command('cp ' + inp_model + '/fort.7 ' './fort.8')
+        #Return name of directory setup made   
+        return loc
 
 
 
@@ -50,25 +54,42 @@ def run():
     cmd="./t202 <fort.5 >fort.6"
     bash_command(cmd)
 
-
+##Gets nominal convergence from the convergence log file in tlusty
 def reltot(file='fort.9'):
     dat=ascii.read(file, header_start=1)
     niter= dat['ITER'][-1]
     maxchange= dat['MAXIMUM'][-1]
-
     print niter, maxchange
+   
+    maxchange=float(maxchange)
     return maxchange
 
-    
+##Move all tlusty output files to the apropriate directory    
+def clean(outdir,maxchange,nlte):
+    maxchange= np.log10(maxchange)
+    if np.isnan(maxchange):
+        maxchange=1000
+
+    #constructing destination path
+    dest='./'
+    if maxchange<0 and nlte:
+        dest=dest + outdir + '/converged'
+    elif maxchange<0:
+        dest=dest + outdir + '/lteconv'
+    else:
+        dest=dest + outdir + '/nconv'
+    print(dest)
+    bash_command('mkdir -p ' + dest)
+    #moving all tlusty i/o files to the destination
+    bash_command('mv ' + 'fort* ' + dest)
+    #move optional parameter file to destination
+    bash_command('cp ' + 'tmp.flag ' + dest)
 
 
-
-##Construct tlusty model from scratch
+##Construct tlusty model 
 def tlusty_runs(nlte=False):
     #read in list of parameters and extract the input parameters
     params=ascii.read('params.in')
-    #params=ascii.read('params.in')
-    #number of columns for our table
     ncols=len(params.columns)
 
     lte='T'
@@ -92,9 +113,13 @@ def tlusty_runs(nlte=False):
 
         print lte, ltg, inp_model
 
-        setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model)
+        #set up input files, then run tlusty, finally check for nominal convergence and move all output files to 
+        outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, inp_model)
         run()
-        reltot()
+        maxchange=reltot()
+        #Move tlusty output files to the appropriate directory
+        clean(outdir,maxchange,nlte)
+
 
 
 ##driver; parse user input
