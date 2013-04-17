@@ -89,9 +89,9 @@ def clean(outdir,maxchange,nlte):
 
 
 ##Construct tlusty model 
-def tlusty_runs(nlte=False):
+def tlusty_runs(nlte=False, myfile='params.in'):
     #read in list of parameters and extract the input parameters
-    params=ascii.read('params.in')
+    params=ascii.read(myfile)
     ncols=len(params.columns)
 
     lte='T'
@@ -128,13 +128,18 @@ def tlusty_runs(nlte=False):
 def main():
     parser=argparse.ArgumentParser(
         description='Wrapper for running TLUSTY')
-    parser.add_argument('--nlte',
+    parser.add_argument('-n','--nlte',
         help='Switch on nlte',
         action='store_true')
+    parser.add_argument('-f', '--file', 
+        help='File containing input parameters', 
+        default='params.in')
     args=parser.parse_args()
+    #print (args)
+    myfile=args.file
     nlte=args.nlte
 
-    tlusty_runs(nlte)
+    tlusty_runs(nlte, myfile)
 
 
 if __name__ == '__main__':
