@@ -20,6 +20,7 @@ def adjust(p, start, delta, file='tmp.flag'):
     pat1=re.compile(s1)
     s2=p+"="+str(start+delta)
     pat2=re.compile(s2)
+    print s1,s2
     new=pat1.sub(s2, old)
 
     f=open(file, 'w')
@@ -32,14 +33,25 @@ def adjust(p, start, delta, file='tmp.flag'):
 ##driver; parse user input
 def main():
     parser=argparse.ArgumentParser(description='Wrapper to gradually adjust parameters')
-    parser.add_argument('param', type=str)
-    parser.add_argument('delta', type=float)
-    parser.add_argument('start', type=float)
-
+    parser.add_argument('param')
+    parser.add_argument('delta')
+    parser.add_argument('start')
+    parser.add_argument('-f', '--floating', 
+        help='Flag to turn on floating point adjustment to parameters',
+        action='store_true')
+    #parsing the input arguments
     args=parser.parse_args()
-    delta=args.delta
     p=args.param
-    start=args.start
+    floating=args.floating
+    #if the user has specified a floating flag, set start and delta parameters to be floats
+    if floating:
+        delta=float(args.delta)
+        start=float(args.start)
+    #otherwise they should be integers    
+    else:
+        delta=int(args.delta)
+        start=int(args.start)
+
 
     print p, delta
 
