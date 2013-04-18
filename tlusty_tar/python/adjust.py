@@ -29,7 +29,6 @@ def adjust_file(p, end, file='tmp.flag'):
 ##Adjusts parameter p in tmp.flag until we have reached target
 def adjust(p, start, target, delta, inp_model):
     there=np.allclose([start], [target])
-    print there
     #if we are close to our target adjust delta accordingly
     if there:
         return
@@ -81,7 +80,6 @@ def main():
         start=float(args.start)
         target=float(args.target)
 
-    print p, delta
     adjust(p, start, target, delta, inp_model)
 
 
