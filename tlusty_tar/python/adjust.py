@@ -40,11 +40,27 @@ def adjust(p, start, target, delta, model, nlte=False):
 
         #End point of the current step
         end=start+delta
-        adjust_file(p, end)
+        #Copy the original optional parameters file 
         if model:
-            tr.tlusty_runs_model(model, nlte=nlte)
+            tr.bash_command('cp ' + model + '/tmp.flag ' + './')
+        adjust_file(p, end)
+
+
+
+        maxchange=1
+        if model:
+            maxchange=tr.tlusty_runs_model(model, nlte=nlte, copy=False)
+            print maxchange
         else:
-            tr.tlusty_runs_file(nlte=nlte)
+            maxchange=tr.tlusty_runs_file(nlte=nlte, copy=False)
+
+        #If we have reached a model which doesn't converge then return 
+        maxchange= np.log10(np.absolute(maxchange))
+        if np.isnan(maxchange):
+            maxchange=1000
+        if maxchange>0:
+            print 'Nominal convergence does not look good chief'
+            return
 
         start=end
         adjust(p, start, target, delta, model, nlte)

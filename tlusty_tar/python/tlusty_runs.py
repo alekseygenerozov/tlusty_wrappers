@@ -23,13 +23,14 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy=True):
 
         f1.write('1\n')
 
-        qgrav=10**log_qgrav
-        teff=10**log_teff
-        dmtot=10**log_dmtot
-        out='{0} {1:8.7E} {2:8.7E} {3:8.7E}'.format(0, teff, qgrav, dmtot)
-        print out
+        qgrav=10.**log_qgrav
+        teff=10.**log_teff
+        dmtot=10.**log_dmtot
 
-        #Construct fort.5 input file for tlusty
+        
+        out='{0} {1:8.7e} {2:8.7e} {3:8.7e}'.format(0, teff, qgrav, dmtot)
+        print out
+        # fort.5 input file for tlusty
         f5.write(out + '\n')
         #Second line of input
         f5.write(lte + '  ' + ltg + '\n')
@@ -112,6 +113,7 @@ def tlusty_runs_model(model, nlte=False, copy=True):
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
     clean(outdir,maxchange,nlte)
+    return maxchange
 
 
 
@@ -148,6 +150,8 @@ def tlusty_runs_file(myfile='params.in', nlte='false', copy=True):
         #Move tlusty output files to the appropriate directory
         clean(outdir,maxchange,nlte)
 
+    return maxchange
+
 
 
 ##driver; parse user input
@@ -175,6 +179,7 @@ def main():
 
 
     if  model:
+        print 'test'
         tlusty_runs_model(model, nlte, copy)
     else:
         tlusty_runs_file(myfile, nlte, copy)
