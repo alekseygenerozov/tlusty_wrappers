@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import tlusty_runs as tr
 import argparse
 import re

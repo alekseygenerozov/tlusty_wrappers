@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import numpy as np
 import subprocess
@@ -12,7 +14,7 @@ def bash_command(cmd):
 
 
 ##Setup input file for tlusty
-def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model):
+def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy=True):
         #files to which we will write input for tlusty
         f5=open('fort.5', 'w')
         f1=open('fort.1', 'w')
@@ -45,7 +47,9 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model):
 
         #If the location of the input model is not blank then copy model atmosphere to the current directory
         if model:
-            bash_command('cp ' + model + '/fort.7 ' './fort.8')
+            bash_command('cp ' + model + '/fort.7 ' + './fort.8')
+            if copy:
+                bash_command('cp ' + model + '/tmp.flag ' + './')
         #Return name of directory setup made   
         return loc
 
@@ -90,7 +94,7 @@ def clean(outdir,maxchange,nlte):
     bash_command('cp ' + 'tmp.flag ' + dest)
 
 ##Run tlusty based on parameters found at the location of model
-def tlusty_runs_model(model, nlte=False):
+def tlusty_runs_model(model, nlte=False, copy=True):
     params=ascii.read(model + '/fort.5', data_start=0, data_end=1)
     #print params
     log_teff=np.log10(params[0][1])
@@ -103,7 +107,7 @@ def tlusty_runs_model(model, nlte=False):
         lte='F'
     ltg='F'
 
-    outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy)
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
@@ -112,7 +116,7 @@ def tlusty_runs_model(model, nlte=False):
 
 
 ##Construct tlusty model based on info in myfile
-def tlusty_runs_file(myfile='params.in', nlte='false'):
+def tlusty_runs_file(myfile='params.in', nlte='false', copy=True):
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
@@ -138,7 +142,7 @@ def tlusty_runs_file(myfile='params.in', nlte='false'):
         print lte, ltg, model
 
         #set up input files, then run tlusty, finally check for nominal convergence and move all output files to 
-        outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy)
         run()
         maxchange=reltot()
         #Move tlusty output files to the appropriate directory
@@ -159,16 +163,21 @@ def main():
     parser.add_argument('-m', '--model',
         help='Set parameters (qgrav, teff, dmtot) to those at location' +
         'and use model atmosphere at this location; higher precedence compared to file')
+    parser.add_argument('-nc', '--nocopy',
+        help='This flag turns off the default behavior of copying tmp.flag from model location',
+        action='store_true')
     args=parser.parse_args()
 
     myfile=args.file
     nlte=args.nlte
     model=args.model
+    copy=not args.nocopy
+
 
     if  model:
-        tlusty_runs_model(model, nlte)
+        tlusty_runs_model(model, nlte, copy)
     else:
-        tlusty_runs_file(myfile, nlte)
+        tlusty_runs_file(myfile, nlte, copy)
 
 
 if __name__ == '__main__':
