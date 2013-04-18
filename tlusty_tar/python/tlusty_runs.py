@@ -72,7 +72,7 @@ def reltot(file='fort.9'):
 
 ##Move all tlusty output files to the apropriate directory    
 def clean(outdir,maxchange,nlte):
-    maxchange= np.log10(maxchange)
+    maxchange= np.log10(np.absolute(maxchange))
     if np.isnan(maxchange):
         maxchange=1000
 
