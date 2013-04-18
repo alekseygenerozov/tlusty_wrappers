@@ -27,7 +27,7 @@ def adjust_file(p, end, file='tmp.flag'):
 
 
 ##Adjusts parameter p in tmp.flag until we have reached target
-def adjust(p, start, target, delta, inp_model):
+def adjust(p, start, target, delta, model, nlte=False):
     there=np.allclose([start], [target])
     #if we are close to our target adjust delta accordingly
     if there:
@@ -39,11 +39,13 @@ def adjust(p, start, target, delta, inp_model):
         #End point of the current step
         end=start+delta
         adjust_file(p, end)
-        
-        tr.tlusty_runs()
+        if model:
+            tr.tlusty_runs_model(model, nlte=nlte)
+        else:
+            tr.tlusty_runs_file(nlte=nlte)
 
         start=end
-        adjust(p, start, target, delta, inp_model)
+        adjust(p, start, target, delta, model, nlte)
 
 
 
@@ -58,29 +60,33 @@ def main():
     parser.add_argument('start')
     parser.add_argument('target')
     parser.add_argument('delta')
-    parser.add_argument('-i','--inp_model',
-        help='Input model atm',
-        action='store_const',
-        const=42)
-    parser.add_argument('-f', '--floating', 
+    parser.add_argument('-m','--model',
+        help='Model atmosphere location')
+    parser.add_argument('-fl', '--floating', 
         help='Flag to turn on floating point adjustment to parameters',
+        action='store_true')
+    parser.add_argument('-n','--nlte',
+        help='Switch on nlte',
         action='store_true')
     #parsing the input arguments
     args=parser.parse_args()
     p=args.param
     floating=args.floating
-    inp_model=args.inp_model
+    model=args.model
+    nlte=args.nlte
 
-    delta=int(args.delta)
-    start=int(args.start)
-    target=int(args.target)    
+
     #if the user has specified a floating flag, set start and delta parameters to be floats
     if floating:
         delta=float(args.delta)
         start=float(args.start)
         target=float(args.target)
+    else:
+        delta=int(args.delta)
+        start=int(args.start)
+        target=int(args.target)    
 
-    adjust(p, start, target, delta, inp_model)
+    adjust(p, start, target, delta, model, nlte)
 
 
 

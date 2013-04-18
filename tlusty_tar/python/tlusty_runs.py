@@ -24,12 +24,13 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model):
         qgrav=10**log_qgrav
         teff=10**log_teff
         dmtot=10**log_dmtot
+        out='{0} {1:8.7E} {2:8.7E} {3:8.7E}'.format(0, teff, qgrav, dmtot)
+        print out
 
         #Construct fort.5 input file for tlusty
-        f5.write(str(0) + ' ' + str(teff) + ' ' + str(qgrav) + ' ' +
-            str(dmtot) + '\n')
+        f5.write(out + '\n')
         #Second line of input
-        f5.write(str(lte) + '  ' + str(ltg) + '\n')
+        f5.write(lte + '  ' + ltg + '\n')
         #Tail 
         tail=tailf.read()
         f5.write(tail) 
