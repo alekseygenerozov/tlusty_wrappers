@@ -26,8 +26,7 @@ def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy=True):
         qgrav=10.**log_qgrav
         teff=10.**log_teff
         dmtot=10.**log_dmtot
-
-        
+   
         out='{0} {1:8.7e} {2:8.7e} {3:8.7e}'.format(0, teff, qgrav, dmtot)
         print out
         # fort.5 input file for tlusty
@@ -93,6 +92,31 @@ def clean(outdir,maxchange,nlte):
     bash_command('mv ' + 'fort* ' + dest)
     #move optional parameter file to destination
     bash_command('cp ' + 'tmp.flag ' + dest)
+
+
+##Run tlusty based on command line input parameters
+def tlusty_runs_input(params, model, nlte=False, copy=True):
+    log_qgrav=params[0]
+    log_teff=params[1]
+    log_dmtot=params[2]
+
+    print log_teff,log_qgrav,log_dmtot
+
+    lte='T'
+    if(nlte):
+        lte='F'
+    ltg='T'
+    if (model):
+        ltg='F'
+
+    outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy)
+    run()
+    maxchange=reltot()
+    #Move tlusty output files to the appropriate directory
+    clean(outdir,maxchange,nlte)
+    return maxchange
+
+
 
 ##Run tlusty based on parameters found at the location of model
 def tlusty_runs_model(model, nlte=False, copy=True):
@@ -170,15 +194,24 @@ def main():
     parser.add_argument('-nc', '--nocopy',
         help='This flag turns off the default behavior of copying tmp.flag from model location',
         action='store_true')
+    parser.add_argument('-p', '--params',
+        help='Stores required parameters for atmosphere. Need 3 positional arguments in the order qgrav, teff, dmtot',
+        nargs=3,
+        type=float)
     args=parser.parse_args()
 
     myfile=args.file
     nlte=args.nlte
     model=args.model
+    params=args.params
     copy=not args.nocopy
 
 
-    if  model:
+
+
+    if input:
+        tlusty_runs_input(params, model, nlte, copy)
+    elif  model:
         print 'test'
         tlusty_runs_model(model, nlte, copy)
     else:
