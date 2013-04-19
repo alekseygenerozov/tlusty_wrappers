@@ -209,7 +209,7 @@ def main():
 
 
 
-    if input:
+    if params:
         tlusty_runs_input(params, model, nlte, copy)
     elif  model:
         print 'test'
