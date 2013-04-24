@@ -98,7 +98,10 @@ Cell[BoxData[{
   RowBox[{
    RowBox[{"GrayBody", "[", 
     RowBox[{"Teff_", ",", " ", "Qg_", ",", " ", 
-     RowBox[{"Free_:", "False"}]}], "]"}], ":=", 
+     RowBox[{"Free_:", "False"}], ",", " ", 
+     RowBox[{"prec_:", 
+      SuperscriptBox["10", 
+       RowBox[{"-", "8"}]]}]}], "]"}], ":=", 
    RowBox[{"Module", "[", 
     RowBox[{
      RowBox[{"{", 
@@ -107,7 +110,7 @@ Cell[BoxData[{
        "\[Kappa]sf", ",", " ", "\[Epsilon]s", ",", "  ", "\[Xi]", ",", " ", 
        "f", ",", " ", "x", "  ", ",", " ", "K", ",", " ", "\[Epsilon]", ",", 
        " ", "Tp", ",", " ", "\[CapitalXi]", ",", " ", "\[Rho]p", ",", " ", 
-       "pr", ",", " ", "pg", ",", " ", "r"}], "}"}], ",", 
+       "pr", ",", " ", "pg", ",", " ", "r", ",", " ", "error"}], "}"}], ",", 
      "\[IndentingNewLine]", 
      RowBox[{
       RowBox[{"\[Kappa]es", "=", "0.4"}], ";", "\[IndentingNewLine]", 
@@ -180,12 +183,37 @@ Cell[BoxData[{
        RowBox[{"FindRoot", "[", 
         RowBox[{
          RowBox[{
-          SuperscriptBox["Teff", "4"], " ", "\[Equal]", 
-          RowBox[{"\[CapitalXi]", "  ", 
+          RowBox[{
+           SuperscriptBox["Teff", "4"], "-", 
+           RowBox[{"\[CapitalXi]", "  ", 
+            SuperscriptBox["Tp", "4"]}]}], "\[Equal]", "0"}], ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"Tp", ",", " ", "Teff"}], "}"}]}], 
+        RowBox[{"(*", 
+         RowBox[{",", " ", 
+          RowBox[{"EvaluationMonitor", "\[RuleDelayed]", " ", 
+           RowBox[{"Print", "[", " ", 
+            RowBox[{"Tp", ",", " ", "\"\<  \>\"", ",", " ", 
+             RowBox[{"Tp", "//", "Im"}], ",", " ", "\"\<  \>\"", ",", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"-", "\[CapitalXi]"}], "  ", 
+               SuperscriptBox["Tp", "4"]}], "//", "Im"}]}], "]"}]}]}], " ", 
+         "*)"}], "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Plot", "[", 
+        RowBox[{
+         RowBox[{
+          SuperscriptBox["Teff", "4"], "-", " ", 
+          RowBox[{"\[CapitalXi]", " ", 
            SuperscriptBox["Tp", "4"]}]}], ",", " ", 
          RowBox[{"{", 
-          RowBox[{"Tp", ",", " ", "Teff"}], "}"}]}], "]"}]}], ";", 
-      "\[IndentingNewLine]", 
+          RowBox[{"Tp", ",", " ", 
+           RowBox[{
+            RowBox[{"0.99", " ", "Tp"}], "/.", "r"}], ",", " ", 
+           RowBox[{
+            RowBox[{"1.01", " ", "Tp"}], "/.", "r"}]}], "}"}]}], "]"}], 
+       "*)"}], "\[IndentingNewLine]", 
       RowBox[{"(*", 
        RowBox[{
        "Correction", " ", "to", " ", "total", " ", "flux", " ", "from", " ", 
@@ -303,12 +331,38 @@ Cell[BoxData[{
           RowBox[{"1", "+", 
            FractionBox["1", "K"]}], ")"}], 
          RowBox[{"-", "1"}]], "//", "Simplify"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"error", "=", 
+       RowBox[{"Abs", "[", 
+        FractionBox[
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"\[CapitalXi]", " ", 
+             SuperscriptBox["Tp", "4"]}], "/.", "r"}], ")"}], "-", 
+          SuperscriptBox["Teff", "4"]}], 
+         SuperscriptBox["Teff", "4"]], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"If", "[", 
+       RowBox[{
+        RowBox[{"error", ">", "prec"}], ",", " ", 
+        RowBox[{"Print", "[", 
+         RowBox[{
+         "\"\<Warning! Error in flux has exceeded the specified threshold. \
+Error is \>\"", ",", " ", "error"}], "]"}]}], "]"}], ";", 
       "\[IndentingNewLine]", "\[IndentingNewLine]", "\[IndentingNewLine]", 
       RowBox[{"{", 
        RowBox[{
-        FractionBox["pr", "pg"], ",", " ", "Tp", ",", " ", "\[Epsilon]"}], 
-       "}"}]}]}], "\[IndentingNewLine]", "]"}]}], 
-  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+        FractionBox["pr", "pg"], ",", " ", "Tp", ",", " ", "\[Epsilon]", ",", 
+        " ", 
+        FractionBox[
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"\[CapitalXi]", " ", 
+             SuperscriptBox["Tp", "4"]}], "/.", "r"}], ")"}], "-", 
+          SuperscriptBox["Teff", "4"]}], 
+         SuperscriptBox["Teff", "4"]]}], "}"}]}]}], "\[IndentingNewLine]", 
+    "]"}]}], "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"PlotSpec", "[", " ", 
    RowBox[{
@@ -457,7 +511,7 @@ Cell[BoxData[{
        RowBox[{"PlotRangeClipping", "\[Rule]", "False"}], ",", " ", 
        RowBox[{"ImageSize", "\[Rule]", "Large"}]}], "]"}]}]}], 
    "\[IndentingNewLine]", "\[IndentingNewLine]", "\[IndentingNewLine]", 
-   "\[IndentingNewLine]", "]"}]}], "\[IndentingNewLine]", 
+   "]"}]}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{
    RowBox[{"Opac", "[", " ", 
@@ -677,7 +731,7 @@ Cell[BoxData[{
            RowBox[{
             RowBox[{
              SuperscriptBox["10", 
-              RowBox[{"-", " ", "4"}]], "peak"}], ",", " ", 
+              RowBox[{"-", " ", "6"}]], "peak"}], ",", " ", 
             RowBox[{"2", "peak"}]}], "}"}]}], "}"}]}], ",", 
        RowBox[{"AxesLabel", "\[Rule]", 
         RowBox[{"{", 
@@ -853,7 +907,7 @@ t40_solar_gray/t40m56q-143/lteconv/fort.14\>\"", ",", " ", "Purple"}],
        RowBox[{
         RowBox[{
          RowBox[{"Nearest", "[", 
-          RowBox[{"#", ",", "1"}], "]"}], "&"}], "/@", "\[Tau]"}]}], ";", 
+          RowBox[{"#", ",", "0.67"}], "]"}], "&"}], "/@", "\[Tau]"}]}], ";", 
       "\[IndentingNewLine]", 
       RowBox[{"pos", "=", 
        RowBox[{"Table", "[", 
@@ -923,13 +977,16 @@ t40_solar_gray/t40m56q-143/lteconv/fort.14\>\"", ",", " ", "Purple"}],
            RowBox[{"i", ",", " ", "1", ",", " ", 
             RowBox[{"Length", "[", "pos", "]"}]}], "}"}]}], "]"}], "//", 
         "Flatten"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"Transpose", "[", 
+       RowBox[{"{", 
+        RowBox[{"\[Nu]", ",", " ", "T"}], "}"}], "]"}], ";", 
+      "\[IndentingNewLine]", 
       RowBox[{"\[Mu]e", "=", 
        RowBox[{"ne", " ", 
         FractionBox["mp", "dens"]}]}], ";", "\[IndentingNewLine]", 
       RowBox[{"\[Sigma]", "=", 
        RowBox[{"\[Mu]e", " ", "0.4"}]}], ";", "\[IndentingNewLine]", 
-      RowBox[{"\[Kappa]", "=", 
-       RowBox[{"\[Chi]", "-", "\[Sigma]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"\[Kappa]", "=", "\[Chi]"}], ";", "\[IndentingNewLine]", 
       RowBox[{"\[Epsilon]", "=", 
        FractionBox["\[Kappa]", 
         RowBox[{"\[Kappa]", "+", "\[Sigma]"}]]}], ";", "\[IndentingNewLine]", 
@@ -1877,45 +1934,11 @@ solar/t40m56q-143/converged\>\"", ",", " ",
     SuperscriptBox["10", "4"], ",", " ", 
     RowBox[{"5.01", " ", 
      SuperscriptBox["10", 
-      RowBox[{"-", "15"}]]}]}], "]"}]}]], "Input"],
-
-Cell[BoxData[
- RowBox[{
-  RowBox[{"(*", 
-   RowBox[{
-    RowBox[{
-     RowBox[{
-      RowBox[{"Log", "[", 
-       RowBox[{"10", ",", "50000."}], "]"}], "\[IndentingNewLine]", 
-      RowBox[{
-       RowBox[{
-        RowBox[{
-         RowBox[{"G", " ", 
-          FractionBox["M", 
-           SuperscriptBox["R", "3"]]}], "/.", 
-         RowBox[{"{", 
-          RowBox[{"R", "\[Rule]", 
-           RowBox[{"126", " ", "Rs"}]}], "}"}]}], "/.", 
-        RowBox[{"{", 
-         RowBox[{"Rs", "\[Rule]", 
-          RowBox[{"2", " ", "G", " ", 
-           FractionBox["M", 
-            SuperscriptBox["c", "2"]]}]}], "}"}]}], "/.", 
-       RowBox[{"{", " ", 
-        RowBox[{"M", "\[Rule]", 
-         RowBox[{
-          SuperscriptBox["10", "6"], " ", "Msun"}]}], "}"}]}]}], "//", 
-     RowBox[{
-      RowBox[{
-       RowBox[{"Log", "[", 
-        RowBox[{"10", ",", " ", "#"}], "]"}], "&"}], "\[IndentingNewLine]", 
-      RowBox[{"Log", "[", 
-       RowBox[{"10", ",", " ", "620000"}], "]"}]}]}], "//", "N"}], "*)"}], 
-  "\[IndentingNewLine]"}]], "Input"]
+      RowBox[{"-", "15"}]]}]}], "]"}]}]], "Input"]
 },
 AutoGeneratedPackage->None,
-WindowSize->{1321, 1046},
-WindowMargins->{{71, Automatic}, {Automatic, 24}},
+WindowSize->{1320, 1046},
+WindowMargins->{{58, Automatic}, {Automatic, 24}},
 PrintingPageRange->{Automatic, Automatic},
 PrintingOptions->{"Magnification"->1.,
 "PaperOrientation"->"Portrait",

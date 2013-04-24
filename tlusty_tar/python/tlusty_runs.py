@@ -63,12 +63,17 @@ def run():
 ##Gets nominal convergence from the convergence log file in tlusty
 def reltot(file='fort.9'):
     dat=ascii.read(file, header_start=1)
+
     niter= dat['ITER'][-1]
-    maxchange= dat['MAXIMUM'][-1]
+    dat_cut=dat[(dat["ITER"]==niter)]
+
+    change=np.array(dat_cut["MAXIMUM"], dtype=float)
+    change=np.array(map(np.abs, change))
+
+    maxchange=change.max()
     print niter, maxchange
-   
-    maxchange=float(maxchange)
     return maxchange
+
 
 ##Move all tlusty output files to the apropriate directory    
 def clean(outdir,maxchange,nlte):
