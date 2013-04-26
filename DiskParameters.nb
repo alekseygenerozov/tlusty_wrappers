@@ -2,6 +2,8 @@ Notebook[{
 Cell[BoxData[{
  RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
  RowBox[{"Needs", "[", "\"\<Notation`\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Needs", "[", "\"\<CustomTicks`\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Needs", "[", "\"\<PlotLegends`\>\"", "]"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"Msun", "=", 
    RowBox[{"2", " ", 
@@ -54,12 +56,16 @@ Cell[BoxData[{
  RowBox[{"Symbolize", "[", 
   TemplateBox[{SubscriptBox["M", "7"]},
    "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
- RowBox[{"Symbolize", "[", 
-  TemplateBox[{SubscriptBox["\[Alpha]", "0.3"]},
-   "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
- RowBox[{"Symbolize", "[", 
-  TemplateBox[{OverscriptBox["m", "."]},
-   "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Symbolize", "[", 
+   TemplateBox[{SubscriptBox["\[Alpha]", "0.3"]},
+    "NotationTemplateTag"], "]"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Symbolize", "[", 
+   TemplateBox[{OverscriptBox["m", "."]},
+    "NotationTemplateTag"], "]"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
  RowBox[{"Symbolize", "[", 
   TemplateBox[{SubscriptBox[
      OverscriptBox["M", "."], "Edd"]},
@@ -70,10 +76,27 @@ Cell[BoxData[{
  RowBox[{"Symbolize", "[", 
   TemplateBox[{SubscriptBox["R", "s"]},
    "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Symbolize", "[", 
+  TemplateBox[{SubscriptBox["\[Epsilon]", "0.1"]},
+   "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Symbolize", "[", 
+  TemplateBox[{SubscriptBox["q", 
+     RowBox[{"-", "3"}]]},
+   "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Symbolize", "[", 
+  TemplateBox[{SubscriptBox["f", 
+     RowBox[{"-", "2"}]]},
+   "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Symbolize", "[", 
+  TemplateBox[{SubscriptBox["\[Alpha]", 
+     RowBox[{"-", "1"}]]},
+   "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"Symbolize", "[", 
-   TemplateBox[{SubscriptBox["\[Epsilon]", "0.1"]},
-    "NotationTemplateTag"], "]"}], 
+   TemplateBox[{SubscriptBox[
+      OverscriptBox["m", "."], 
+      RowBox[{"-", "1"}]]},
+    "NotationTemplateTag"], "]"}], "\[IndentingNewLine]", 
   "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"M", "=", 
@@ -207,41 +230,7 @@ Cell[BoxData[{
           SubscriptBox["M", "7"], ">", "0"}], ",", " ", 
          RowBox[{"r3", ">", "0"}]}], "}"}]}]}], "]"}], 
     "&"}]}]}], "\[IndentingNewLine]"}], "Input",
- InitializationCell->True,
- CellChangeTimes->{{3.56779392640979*^9, 3.567793927693861*^9}, {
-   3.567794369011264*^9, 3.56779438806848*^9}, {3.567794493433627*^9, 
-   3.5677945006224613`*^9}, {3.567794926533576*^9, 3.567794933094769*^9}, {
-   3.567795632135785*^9, 3.5677956403867607`*^9}, {3.5677958484552*^9, 
-   3.567795855876357*^9}, 3.567796170563404*^9, {3.5678013463459997`*^9, 
-   3.567801368540595*^9}, {3.567801647708261*^9, 3.567801655395028*^9}, {
-   3.567802640823477*^9, 3.56780264126814*^9}, {3.567803257797913*^9, 
-   3.567803258337544*^9}, {3.567881941480403*^9, 3.567881959614913*^9}, {
-   3.567882143621293*^9, 3.5678821732674437`*^9}, {3.567953177194581*^9, 
-   3.567953184024074*^9}, {3.56795324806494*^9, 3.567953254983288*^9}, {
-   3.568139894845142*^9, 3.5681399034605427`*^9}, {3.568140555251717*^9, 
-   3.5681405748702803`*^9}, {3.568140658530964*^9, 3.568140670994525*^9}, {
-   3.568140928111199*^9, 3.568140944531671*^9}, {3.5681411822223377`*^9, 
-   3.568141213526414*^9}, {3.568141255134902*^9, 3.568141264979217*^9}, {
-   3.568141463641837*^9, 3.568141464539612*^9}, {3.568141598479714*^9, 
-   3.568141805614962*^9}, {3.568141841280435*^9, 3.568141843865354*^9}, {
-   3.568141889668919*^9, 3.56814189724162*^9}, {3.568142041330838*^9, 
-   3.568142068133931*^9}, {3.568142105951687*^9, 3.568142147297337*^9}, {
-   3.56839834875665*^9, 3.5683985322355947`*^9}, {3.5683985635038548`*^9, 
-   3.56839860152559*^9}, {3.5695184912187967`*^9, 3.5695184963838367`*^9}, {
-   3.573388199937394*^9, 3.573388286388644*^9}, {3.573388544477211*^9, 
-   3.573388708056464*^9}, {3.573388773895863*^9, 3.573388999334264*^9}, {
-   3.5733890422672462`*^9, 3.5733891360158*^9}, {3.57338928692178*^9, 
-   3.5733892889522467`*^9}, {3.5734257850681458`*^9, 3.573425786790938*^9}, {
-   3.5738247471514378`*^9, 3.573824796154159*^9}, {3.574084655806066*^9, 
-   3.574084669383581*^9}, {3.574084798232959*^9, 3.5740848036769323`*^9}, {
-   3.574085763295525*^9, 3.5740857642386103`*^9}, 3.574095057137082*^9, 
-   3.5740951214255953`*^9, 3.574095158100997*^9, {3.5740952550002413`*^9, 
-   3.5740953044549627`*^9}, {3.5743500315486298`*^9, 3.574350053381174*^9}, {
-   3.574350192904756*^9, 3.57435019387941*^9}, {3.574350260968438*^9, 
-   3.5743502627429667`*^9}}],
-
-Cell[BoxData["\[IndentingNewLine]"], "Input",
- CellChangeTimes->{3.574095114696907*^9}],
+ InitializationCell->True],
 
 Cell[BoxData[
  RowBox[{"\[IndentingNewLine]", 
@@ -376,8 +365,8 @@ Cell[BoxData[
          OverscriptBox["\[Kappa]", "^"], "\[Rule]", "1"}], ",", " ", 
         RowBox[{
          SubscriptBox["f", "T"], "\[Rule]", 
-         RowBox[{"3", "/", "8"}]}]}], "}"}]}]}], ";"}], "\[IndentingNewLine]",
-    "\n", 
+         RowBox[{"3", "/", "8"}]}]}], "}"}]}]}], ";"}], "\n", 
+   "\[IndentingNewLine]", 
    RowBox[{"\[CapitalSigma]1", "/.", 
     RowBox[{"{", 
      RowBox[{
@@ -686,11 +675,813 @@ Cell[BoxData[
    3.573902463502728*^9, 3.573902475955727*^9}, {3.573902523876588*^9, 
    3.573902611089116*^9}, {3.57390272540934*^9, 3.5739027379232388`*^9}, {
    3.573902806247883*^9, 3.5739028110926113`*^9}, {3.574095428316401*^9, 
-   3.574095432949492*^9}}]
+   3.574095432949492*^9}}],
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+   "Note", " ", "we", " ", "are", " ", "ignoring", " ", "the", " ", "order", 
+    " ", "unity", " ", "term", " ", "\[Lambda]", " ", "and", " ", "also", " ",
+     "terms", " ", "with", " ", 
+    RowBox[{
+     SubscriptBox["\[Delta]r", "i"], "/", 
+     RowBox[{
+      SubscriptBox["r", "H"], ".", " ", "We"}]}], " ", "also", " ", "roughly",
+     " ", "equate", " ", "the", " ", "term", " ", 
+    RowBox[{"(", 
+     RowBox[{
+      SubscriptBox["\[Delta]r", "i"], "/", 
+      SubscriptBox["r", "s"]}], ")"}], " ", "with", " ", "0"}], "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "rs2", "]"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmg", "=", 
+     RowBox[{"23", " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["\[Alpha]", 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{"1", "/", "2"}]], " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox[
+         OverscriptBox["m", "."], 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{
+        RowBox[{"-", "3"}], "/", "8"}]], 
+      SuperscriptBox[
+       SubscriptBox["M", "7"], 
+       RowBox[{
+        RowBox[{"-", "3"}], "/", "4"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], ")"}], 
+       RowBox[{"5", "/", "8"}]], 
+      SuperscriptBox[
+       RowBox[{"(", "rs2", ")"}], 
+       RowBox[{
+        RowBox[{"-", "7"}], "/", "8"}]]}]}], ";", 
+    RowBox[{"a", "=", 
+     RowBox[{"0.456", " ", 
+      RowBox[{"(", 
+       SubscriptBox["\[Alpha]", 
+        RowBox[{"-", "1"}]], ")"}], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["f", 
+         RowBox[{"-", "2"}]], ")"}], 
+       RowBox[{
+        RowBox[{"-", "5"}], "/", "4"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], ")"}], 
+       RowBox[{
+        RowBox[{"-", "13"}], "/", "12"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["M", "7"], ")"}], 
+       RowBox[{
+        RowBox[{"-", "1"}], "/", "4"}]], 
+      SuperscriptBox[
+       RowBox[{"(", "rs2", ")"}], 
+       RowBox[{"5", "/", "8"}]]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmos", "=", 
+     RowBox[{"0.97", " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["\[Alpha]", 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{
+        RowBox[{"-", "2"}], "/", "11"}]], " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox[
+         OverscriptBox["m", "."], 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{"-", "1"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["M", "7"], ")"}], 
+       RowBox[{"1", "/", "22"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["f", 
+         RowBox[{"-", "2"}]], ")"}], 
+       RowBox[{"5", "/", "22"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], ")"}], 
+       RowBox[{"5", "/", "11"}]], 
+      SuperscriptBox[
+       RowBox[{"(", "rs2", ")"}], 
+       RowBox[{"39", "/", "44"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        RowBox[{"Max", "[", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"ProductLog", "[", 
+            RowBox[{"0", ",", 
+             RowBox[{"-", "a"}]}], "]"}], "//", "Abs"}], ",", 
+          RowBox[{
+           RowBox[{"ProductLog", "[", 
+            RowBox[{
+             RowBox[{"-", "1"}], ",", " ", 
+             RowBox[{"-", "a"}]}], "]"}], "//", "Abs"}]}], "]"}], ")"}], 
+       RowBox[{"13", "/", "11"}]]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmou", "=", 
+     RowBox[{"1.3", " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["\[Alpha]", 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{"-", "2"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox[
+         OverscriptBox["m", "."], 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{"-", "1"}]], " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["M", "7"], ")"}], 
+       RowBox[{"1", "/", "2"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["f", 
+         RowBox[{"-", "2"}]], ")"}], 
+       RowBox[{"5", "/", "2"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], ")"}], 
+       RowBox[{"5", "/", "2"}]], 
+      SuperscriptBox[
+       RowBox[{"(", "rs2", ")"}], 
+       RowBox[{
+        RowBox[{"-", "1"}], "/", "4"}]]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmou", "=", 
+     RowBox[{"kmou", "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         SubscriptBox["\[Alpha]", 
+          RowBox[{"-", "1"}]], "\[Rule]", "1"}], ",", " ", 
+        RowBox[{
+         SubscriptBox[
+          OverscriptBox["m", "."], 
+          RowBox[{"-", "1"}]], "\[Rule]", "1"}], ",", "  ", 
+        RowBox[{
+         SubscriptBox["f", 
+          RowBox[{"-", "2"}]], "\[Rule]", "1"}]}], "}"}]}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmos", "=", 
+     RowBox[{"kmos", "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         SubscriptBox["\[Alpha]", 
+          RowBox[{"-", "1"}]], "\[Rule]", "1"}], ",", " ", 
+        RowBox[{
+         SubscriptBox[
+          OverscriptBox["m", "."], 
+          RowBox[{"-", "1"}]], "\[Rule]", "1"}], ",", "  ", 
+        RowBox[{
+         SubscriptBox["f", 
+          RowBox[{"-", "2"}]], "\[Rule]", "1"}]}], "}"}]}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmg", "=", 
+     RowBox[{"kmg", "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         SubscriptBox["\[Alpha]", 
+          RowBox[{"-", "1"}]], "\[Rule]", "1"}], ",", " ", 
+        RowBox[{
+         SubscriptBox[
+          OverscriptBox["m", "."], 
+          RowBox[{"-", "1"}]], "\[Rule]", "1"}], ",", "  ", 
+        RowBox[{
+         SubscriptBox["f", 
+          RowBox[{"-", "2"}]], "\[Rule]", "1"}]}], "}"}]}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"rs2", "=", 
+     RowBox[{"rs2", "/.", 
+      RowBox[{
+       RowBox[{"Solve", "[", 
+        RowBox[{
+         RowBox[{"Pd", "==", 
+          RowBox[{"2", 
+           FractionBox["\[Pi]", 
+            SqrtBox[
+             RowBox[{"G", " ", 
+              FractionBox["M", 
+               SuperscriptBox[
+                RowBox[{"(", 
+                 RowBox[{"rs2", " ", "100", " ", 
+                  SubscriptBox["R", "s"]}], ")"}], "3"]]}]]], 
+           FractionBox["1", 
+            RowBox[{"(", 
+             RowBox[{"3600", " ", "24"}], ")"}]]}]}], ",", " ", "rs2"}], 
+        "]"}], "[", 
+       RowBox[{"[", 
+        RowBox[{"-", "1"}], "]"}], "]"}]}]}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{"kmos", "=", 
+     RowBox[{
+      RowBox[{"kmos", "/.", 
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{
+          SubscriptBox["M", "7"], "\[Rule]", 
+          SuperscriptBox["10", "2"]}], "}"}], "\[IndentingNewLine]", 
+        "kmou"}]}], "=", 
+      RowBox[{
+       RowBox[{"kmou", "/.", 
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{
+           SubscriptBox["M", "7"], "\[Rule]", 
+           SuperscriptBox["10", "2"]}], "}"}], "\[IndentingNewLine]", 
+         "kmg"}]}], "=", 
+       RowBox[{"kmg", "/.", 
+        RowBox[{"{", 
+         RowBox[{
+          SubscriptBox["M", "7"], "\[Rule]", 
+          SuperscriptBox["10", "2"]}], "}"}]}]}]}]}], "*)"}], "\n", 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"sub", "=", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{
+        SubscriptBox["M", "7"], "\[Rule]", "1"}], ",", " ", 
+       RowBox[{"Pd", "\[Rule]", 
+        SuperscriptBox["10", "lp"]}], ",", " ", 
+       RowBox[{
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], "\[Rule]", 
+        SuperscriptBox["10", 
+         RowBox[{"lq", "+", "3"}]]}]}], "}"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{"ContourPlot", "[", 
+    RowBox[{
+     RowBox[{"Min", "[", 
+      RowBox[{
+       RowBox[{"kmg", "/.", "sub"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"kmou", "/.", "sub"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"kmos", "/.", "sub"}]}], "]"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"lp", ",", " ", "0", ",", " ", 
+       RowBox[{"Log", "[", 
+        RowBox[{"10", ",", "3000"}], "]"}]}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"lq", ",", " ", 
+       RowBox[{"-", "3"}], ",", " ", 
+       RowBox[{"-", "1"}]}], "}"}], ",", " ", 
+     RowBox[{"FrameTicks", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+       "LogTicks", ",", " ", "LogTicks", ",", " ", "LogTicks", ",", " ", 
+        "LogTicks"}], "}"}]}], ",", " ", 
+     RowBox[{"ColorFunctionScaling", "\[Rule]", "False"}], ",", " ", 
+     RowBox[{"PlotRange", "\[Rule]", "All"}], ",", " ", 
+     RowBox[{"PlotRange", "\[Rule]", "All"}], ",", " ", 
+     RowBox[{"Contours", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+       "2", ",", "10", ",", "20", ",", "50", ",", " ", "100", ",", " ", 
+        "150"}], "}"}]}], ",", " ", 
+     RowBox[{"ContourLabels", "\[Rule]", "True"}], ",", " ", 
+     RowBox[{"ContourShading", "\[Rule]", "None"}]}], "]"}], 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"sub", "=", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{
+        SubscriptBox["M", "7"], "\[Rule]", 
+        SuperscriptBox["10", 
+         RowBox[{"-", "2"}]]}], ",", " ", 
+       RowBox[{"Pd", "\[Rule]", 
+        SuperscriptBox["10", "lp"]}], ",", " ", 
+       RowBox[{
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], "\[Rule]", 
+        SuperscriptBox["10", 
+         RowBox[{"lq", "+", "3"}]]}]}], "}"}]}], ";"}], "\n", 
+   RowBox[{"ContourPlot", "[", 
+    RowBox[{
+     RowBox[{"Min", "[", 
+      RowBox[{
+       RowBox[{"kmg", "/.", "sub"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"kmou", "/.", "sub"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"kmos", "/.", "sub"}]}], "]"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"lp", ",", " ", 
+       RowBox[{"-", "2"}], ",", " ", 
+       RowBox[{"Log", "[", 
+        RowBox[{"10", ",", "30"}], "]"}]}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"lq", ",", " ", 
+       RowBox[{"-", "3"}], ",", " ", 
+       RowBox[{"-", "1"}]}], "}"}], ",", " ", 
+     RowBox[{"FrameTicks", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+       "LogTicks", ",", " ", "LogTicks", ",", " ", "LogTicks", ",", " ", 
+        "LogTicks"}], "}"}]}], ",", " ", 
+     RowBox[{"ColorFunctionScaling", "\[Rule]", "False"}], ",", " ", 
+     RowBox[{"PlotRange", "\[Rule]", "All"}], ",", " ", 
+     RowBox[{"PlotRange", "\[Rule]", "All"}], ",", " ", 
+     RowBox[{"Contours", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+       "2", ",", "10", ",", "20", ",", "50", ",", " ", "100", ",", " ", "250",
+         ",", "500"}], "}"}]}], ",", " ", 
+     RowBox[{"ContourLabels", "\[Rule]", "True"}], ",", " ", 
+     RowBox[{"ContourShading", "\[Rule]", "None"}]}], "]"}], 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{"RegionPlot", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"kmou", "/.", "sub"}], ")"}], "==", 
+        RowBox[{"Min", "[", 
+         RowBox[{
+          RowBox[{"kmg", "/.", "sub"}], ",", "\[IndentingNewLine]", 
+          RowBox[{"kmou", "/.", "sub"}], ",", 
+          RowBox[{"kmos", "/.", "sub"}]}], "]"}]}], ",", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"kmg", "/.", "sub"}], ")"}], "==", 
+        RowBox[{"Min", "[", 
+         RowBox[{
+          RowBox[{"kmg", "/.", "sub"}], ",", "\[IndentingNewLine]", 
+          RowBox[{"kmou", "/.", "sub"}], ",", 
+          RowBox[{"kmos", "/.", "sub"}]}], "]"}]}]}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"lp", ",", " ", 
+       RowBox[{"-", "2"}], ",", " ", 
+       RowBox[{"Log", "[", 
+        RowBox[{"10", ",", "30"}], "]"}]}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"lq", ",", " ", 
+       RowBox[{"-", "3"}], ",", " ", 
+       RowBox[{"-", "1"}]}], "}"}], ",", " ", 
+     RowBox[{"FrameTicks", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+       "LogTicks", ",", " ", "LogTicks", ",", " ", "LogTicks", ",", " ", 
+        "LogTicks"}], "}"}]}]}], "]"}]}]}]], "Input"],
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "rs2", "]"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Teff1", "=", 
+     RowBox[{"Teff", "/.", 
+      RowBox[{"{", " ", 
+       RowBox[{
+        RowBox[{"\[Mu]0", "\[Rule]", "0.615"}], ",", 
+        RowBox[{"\[Mu]e", "\[Rule]", "0.875"}], ",", " ", 
+        RowBox[{
+         SubscriptBox["\[Epsilon]", "0.1"], "\[Rule]", "1"}], ",", " ", 
+        RowBox[{
+         OverscriptBox["m", "."], "\[Rule]", "0.1"}], ",", " ", 
+        RowBox[{
+         OverscriptBox["\[Kappa]", "^"], "\[Rule]", "1"}]}], "}"}]}]}], ";"}],
+    "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Tc1", "=", 
+     RowBox[{
+      RowBox[{"8", " ", 
+       SuperscriptBox["10", "4"], " ", 
+       SuperscriptBox["\[Mu]0", 
+        RowBox[{"1", "/", "5"}]], " ", 
+       SuperscriptBox["\[Mu]e", 
+        RowBox[{
+         RowBox[{"-", "1"}], "/", "5", " "}]], 
+       SuperscriptBox["r3", 
+        RowBox[{
+         RowBox[{"-", "9"}], "/", "10"}]], " ", 
+       SuperscriptBox[
+        SubscriptBox["M", "7"], 
+        RowBox[{
+         RowBox[{"-", "1"}], "/", "5"}]], " ", 
+       SuperscriptBox[
+        SubscriptBox["\[Alpha]", "0.3"], 
+        RowBox[{
+         RowBox[{"-", "1"}], "/", "5"}]], " ", 
+       SuperscriptBox[
+        SubscriptBox["f", "T"], 
+        RowBox[{"1", "/", "5"}]], " ", 
+       SuperscriptBox[
+        RowBox[{"(", 
+         FractionBox[
+          OverscriptBox["m", "."], 
+          SubscriptBox["\[Epsilon]", "0.1"]], ")"}], 
+        RowBox[{"2", "/", "5"}]], " ", 
+       SuperscriptBox[
+        OverscriptBox["\[Kappa]", "^"], 
+        RowBox[{"1", "/", "5"}]]}], " ", "/.", 
+      RowBox[{"{", " ", 
+       RowBox[{
+        RowBox[{"\[Mu]0", "\[Rule]", "0.615"}], ",", 
+        RowBox[{"\[Mu]e", "\[Rule]", "0.875"}], ",", " ", 
+        RowBox[{
+         SubscriptBox["\[Epsilon]", "0.1"], "\[Rule]", "1"}], ",", " ", 
+        RowBox[{
+         OverscriptBox["m", "."], "\[Rule]", "0.1"}], ",", " ", 
+        RowBox[{
+         OverscriptBox["\[Kappa]", "^"], "\[Rule]", "1"}], ",", " ", 
+        RowBox[{
+         SubscriptBox["f", "T"], "\[Rule]", 
+         FractionBox["3", "8"]}], ",", " ", 
+        RowBox[{
+         SubscriptBox["\[Alpha]", "0.3"], "\[Rule]", "1"}]}], "}"}]}]}], 
+    ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Tc2", "=", 
+     RowBox[{
+      SuperscriptBox[
+       RowBox[{"(", 
+        RowBox[{"Min", "[", 
+         RowBox[{"kmou", ",", " ", "kmos", ",", " ", "kmg"}], "]"}], " ", 
+        ")"}], 
+       RowBox[{"1", "/", "4"}]], "Tc1"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{
+     RowBox[{"cs1", "=", 
+      SqrtBox[
+       RowBox[{"kb", " ", 
+        FractionBox["Tc1", "mp"]}]]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"cs2", "=", 
+      SqrtBox[
+       RowBox[{"kb", " ", 
+        FractionBox["Tc2", "mp"]}]]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"H1", "=", 
+      FractionBox["cs1", 
+       SqrtBox["Q"]]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"H2", "=", 
+      FractionBox["cs2", 
+       SqrtBox["Q"]]}], ";"}], "*)"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"r", "=", 
+     RowBox[{
+      SuperscriptBox["10", "3"], 
+      SubscriptBox["R", "s"], " ", "r3"}]}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmg", "=", 
+     RowBox[{"23", " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["\[Alpha]", 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{"1", "/", "2"}]], " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox[
+         OverscriptBox["m", "."], 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{
+        RowBox[{"-", "3"}], "/", "8"}]], 
+      SuperscriptBox[
+       SubscriptBox["M", "7"], 
+       RowBox[{
+        RowBox[{"-", "3"}], "/", "4"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], ")"}], 
+       RowBox[{"5", "/", "8"}]], 
+      SuperscriptBox[
+       RowBox[{"(", "rs2", ")"}], 
+       RowBox[{
+        RowBox[{"-", "7"}], "/", "8"}]]}]}], ";", 
+    RowBox[{"a", "=", 
+     RowBox[{"0.456", " ", 
+      RowBox[{"(", 
+       SubscriptBox["\[Alpha]", 
+        RowBox[{"-", "1"}]], ")"}], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["f", 
+         RowBox[{"-", "2"}]], ")"}], 
+       RowBox[{
+        RowBox[{"-", "5"}], "/", "4"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], ")"}], 
+       RowBox[{
+        RowBox[{"-", "13"}], "/", "12"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["M", "7"], ")"}], 
+       RowBox[{
+        RowBox[{"-", "1"}], "/", "4"}]], 
+      SuperscriptBox[
+       RowBox[{"(", "rs2", ")"}], 
+       RowBox[{"5", "/", "8"}]]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmos", "=", 
+     RowBox[{"0.97", " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["\[Alpha]", 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{
+        RowBox[{"-", "2"}], "/", "11"}]], " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox[
+         OverscriptBox["m", "."], 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{"-", "1"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["M", "7"], ")"}], 
+       RowBox[{"1", "/", "22"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["f", 
+         RowBox[{"-", "2"}]], ")"}], 
+       RowBox[{"5", "/", "22"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], ")"}], 
+       RowBox[{"5", "/", "11"}]], 
+      SuperscriptBox[
+       RowBox[{"(", "rs2", ")"}], 
+       RowBox[{"39", "/", "44"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        RowBox[{"Max", "[", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"ProductLog", "[", 
+            RowBox[{"0", ",", 
+             RowBox[{"-", "a"}]}], "]"}], "//", "Abs"}], ",", 
+          RowBox[{
+           RowBox[{"ProductLog", "[", 
+            RowBox[{
+             RowBox[{"-", "1"}], ",", " ", 
+             RowBox[{"-", "a"}]}], "]"}], "//", "Abs"}]}], "]"}], ")"}], 
+       RowBox[{"13", "/", "11"}]]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"kmou", "=", 
+     RowBox[{"1.3", " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["\[Alpha]", 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{"-", "2"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox[
+         OverscriptBox["m", "."], 
+         RowBox[{"-", "1"}]], ")"}], 
+       RowBox[{"-", "1"}]], " ", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["M", "7"], ")"}], 
+       RowBox[{"1", "/", "2"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["f", 
+         RowBox[{"-", "2"}]], ")"}], 
+       RowBox[{"5", "/", "2"}]], 
+      SuperscriptBox[
+       RowBox[{"(", 
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], ")"}], 
+       RowBox[{"5", "/", "2"}]], 
+      SuperscriptBox[
+       RowBox[{"(", "rs2", ")"}], 
+       RowBox[{
+        RowBox[{"-", "1"}], "/", "4"}]]}]}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"sub", "=", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"rs2", "\[Rule]", 
+        RowBox[{"10", "r3"}]}], ",", " ", 
+       RowBox[{
+        SubscriptBox["\[Alpha]", 
+         RowBox[{"-", "1"}]], "\[Rule]", "3"}], ",", " ", 
+       RowBox[{
+        SubscriptBox[
+         OverscriptBox["m", "."], 
+         RowBox[{"-", "1"}]], "\[Rule]", "1"}], ",", "  ", 
+       RowBox[{
+        SubscriptBox["f", 
+         RowBox[{"-", "2"}]], "\[Rule]", "1"}], ",", 
+       RowBox[{
+        SubscriptBox["q", 
+         RowBox[{"-", "3"}]], "\[Rule]", "100"}]}], "}"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"kmou", ",", " ", "kmos", ",", " ", "kmg"}], "}"}], "=", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"kmou", ",", " ", "kmos", ",", " ", "kmg"}], "}"}], "/.", 
+      "sub"}]}], ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{
+     RowBox[{"contours", "=", 
+      RowBox[{"Range", "[", 
+       RowBox[{"2.5", ",", " ", "6", ",", " ", "0.25"}], "]"}]}], ";"}], 
+    "*)"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"TMin", "=", 
+     RowBox[{
+      RowBox[{"Log", "[", 
+       RowBox[{"10", ",", " ", 
+        RowBox[{"Teff1", 
+         SuperscriptBox[
+          RowBox[{"(", 
+           RowBox[{"Min", "[", 
+            RowBox[{"kmou", ",", " ", "kmos", ",", " ", "kmg"}], "]"}], " ", 
+           ")"}], 
+          RowBox[{"1", "/", "4"}]]}]}], "]"}], "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"r3", "\[Rule]", "10"}], ",", " ", 
+        RowBox[{
+         SubscriptBox["M", "7"], "\[Rule]", "100"}]}], "}"}]}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"TMax", "=", 
+     RowBox[{
+      RowBox[{"Log", "[", 
+       RowBox[{"10", ",", " ", 
+        RowBox[{"Teff1", 
+         SuperscriptBox[
+          RowBox[{"(", 
+           RowBox[{"Min", "[", 
+            RowBox[{"kmou", ",", " ", "kmos", ",", " ", "kmg"}], "]"}], " ", 
+           ")"}], 
+          RowBox[{"1", "/", "4"}]]}]}], "]"}], "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"r3", "\[Rule]", "0.1"}], ",", " ", 
+        RowBox[{
+         SubscriptBox["M", "7"], "\[Rule]", "0.01"}]}], "}"}]}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Log", "[", 
+     RowBox[{"10", ",", " ", "Tc2"}], "]"}], "/.", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"r3", "\[Rule]", "0.1"}], ",", " ", 
+      RowBox[{
+       SubscriptBox["M", "7"], "\[Rule]", "0.01"}]}], "}"}]}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"TeffLegend", "=", 
+     RowBox[{"Graphics", "[", 
+      RowBox[{"Legend", "[", 
+       RowBox[{
+        RowBox[{"Function", "[", 
+         RowBox[{
+          RowBox[{"{", "x", "}"}], ",", " ", 
+          RowBox[{
+           RowBox[{"ColorData", "[", "\"\<Rainbow\>\"", "]"}], "[", "x", 
+           "]"}]}], "]"}], ",", " ", "50", ",", " ", 
+        RowBox[{
+         RowBox[{"NumberForm", "[", 
+          RowBox[{"TMin", ",", "2"}], "]"}], "//", "ToString"}], ",", " ", 
+        RowBox[{
+         RowBox[{"NumberForm", "[", 
+          RowBox[{"TMax", ",", "2"}], "]"}], "//", "ToString"}], ",", " ", 
+        RowBox[{"LegendShadow", "\[Rule]", "False"}], ",", " ", 
+        RowBox[{"LegendBorderSpace", "\[Rule]", "2"}]}], "]"}], "]"}]}], 
+    ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{"ColorFunction", "\[Rule]", 
+     RowBox[{"Function", "[", 
+      RowBox[{
+       RowBox[{"{", "x", "}"}], ",", " ", 
+       RowBox[{
+        RowBox[{"ColorData", "[", "\"\<Rainbow\>\"", "]"}], "[", "x", "]"}]}],
+       "]"}]}], "*)"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{"c1", "=", 
+     RowBox[{"ContourPlot", "[", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{"Log", "[", 
+          RowBox[{"10", ",", "Teff1"}], "]"}], "}"}], "/.", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"r3", "\[Rule]", 
+           SuperscriptBox["10", "x"]}], ",", 
+          RowBox[{
+           SubscriptBox["M", "7"], "\[Rule]", 
+           SuperscriptBox["10", "y"]}]}], "}"}]}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"x", ",", " ", 
+         RowBox[{"-", "1"}], ",", " ", "1"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"y", ",", 
+         RowBox[{"-", "2"}], ",", " ", "2"}], "}"}], ",", " ", 
+       RowBox[{"ContourShading", "\[Rule]", "False"}], ",", " ", 
+       RowBox[{"ContourStyle", "\[Rule]", 
+        RowBox[{"Directive", "[", "Blue", "]"}]}], ",", " ", 
+       RowBox[{"PlotLabel", "\[Rule]", "\"\<Q Contour Plot\>\""}], ",", " ", 
+       RowBox[{"FrameLabel", "\[Rule]", 
+        RowBox[{"{", 
+         RowBox[{
+         "\"\<Log[\!\(\*SubscriptBox[\(r\), \(3\)]\)]\>\"", ",", 
+          "\"\<Log[\!\(\*SubscriptBox[\(M\), \(7\)]\)]\>\""}], "}"}]}], ",", 
+       " ", 
+       RowBox[{"Contours", "\[Rule]", "contours"}]}], "]"}]}], "*)"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"c2", "=", 
+     RowBox[{"DensityPlot", "[", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{"Log", "[", 
+          RowBox[{"10", ",", 
+           RowBox[{
+            SuperscriptBox[
+             RowBox[{"(", 
+              RowBox[{"Min", "[", 
+               RowBox[{"kmou", ",", " ", "kmos", ",", " ", "kmg"}], "]"}], 
+              " ", ")"}], 
+             RowBox[{"1", "/", "4"}]], "Teff1"}]}], "]"}], "}"}], "/.", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"r3", "\[Rule]", 
+           SuperscriptBox["10", "x"]}], ",", 
+          RowBox[{
+           SubscriptBox["M", "7"], "\[Rule]", 
+           SuperscriptBox["10", "y"]}]}], "}"}]}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"x", ",", " ", 
+         RowBox[{"-", "1"}], ",", " ", "1"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"y", ",", 
+         RowBox[{"-", "2"}], ",", " ", "2"}], "}"}], ",", "  ", 
+       RowBox[{
+       "PlotLabel", "\[Rule]", 
+        "\"\<Perturbed \!\(\*SubscriptBox[\(T\), \(eff\)]\)\>\""}], ",", " ", 
+       
+       RowBox[{"FrameLabel", "\[Rule]", 
+        RowBox[{"{", 
+         RowBox[{
+         "\"\<Log[\!\(\*SubscriptBox[\(r\), \(3\)]\)]\>\"", ",", 
+          "\"\<Log[\!\(\*SubscriptBox[\(M\), \(7\)]\)]\>\""}], "}"}]}], 
+       RowBox[{"(*", 
+        RowBox[{",", 
+         RowBox[{"ContourShading", "\[Rule]", "False"}], ",", " ", 
+         RowBox[{"Contours", "\[Rule]", "contours"}], ",", 
+         RowBox[{"ContourStyle", "\[Rule]", 
+          RowBox[{"Directive", "[", "Blue", "]"}]}]}], "*)"}], ",", 
+       RowBox[{"ColorFunction", "\[Rule]", 
+        RowBox[{"Function", "[", 
+         RowBox[{
+          RowBox[{"{", "x", "}"}], ",", " ", 
+          RowBox[{
+           RowBox[{"ColorData", "[", "\"\<Rainbow\>\"", "]"}], "[", "x", 
+           "]"}]}], "]"}]}]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{"GraphicsRow", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"c2", ",", " ", "TeffLegend"}], "}"}], ",", " ", 
+     RowBox[{"ImageSize", "\[Rule]", "Large"}]}], "]"}]}]}]], "Input"],
+
+Cell[BoxData["\[IndentingNewLine]"], "Input"]
 },
 AutoGeneratedPackage->None,
-WindowSize->{1803, 714},
-WindowMargins->{{Automatic, -7}, {9, Automatic}},
+WindowSize->{1855, 1056},
+WindowMargins->{{Automatic, 0}, {0, Automatic}},
 PrintingPageRange->{Automatic, Automatic},
 PrintingOptions->{"Magnification"->1.,
 "PaperOrientation"->"Portrait",
