@@ -67,10 +67,15 @@ def reltot(file='fort.9'):
     niter= dat['ITER'][-1]
     dat_cut=dat[(dat["ITER"]==niter)]
 
+    
     change=np.array(dat_cut["MAXIMUM"], dtype=float)
     change=np.array(map(np.abs, change))
 
     maxchange=change.max()
+    #I noticed some unconverged models may have all 0's and then some nans this is an ad hoc solution to cover this case.
+    if maxchange==0:
+        return 1000
+
     print niter, maxchange
     return maxchange
 
