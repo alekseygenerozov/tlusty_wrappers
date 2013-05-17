@@ -205,6 +205,7 @@ def main():
         help='This flag turns off the default behavior of copying tmp.flag from model location',
         action='store_true')
     parser.add_argument('-p', '--params',
+        metavar=('qgrav', 'teff', 'dmtot'),
         help='Stores required parameters for atmosphere. Need 3 positional arguments in the order qgrav, teff, dmtot',
         nargs=3,
         type=float)
