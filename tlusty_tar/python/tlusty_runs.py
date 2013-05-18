@@ -14,7 +14,14 @@ def bash_command(cmd):
 
 
 ##Setup input file for tlusty
-def setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy=True):
+def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True):
+        lte='T'
+        if(nlte):
+            lte='F'
+        ltg='T'
+        if (model):
+            ltg='F'
+
         #files to which we will write input for tlusty
         f5=open('fort.5', 'w')
         f1=open('fort.1', 'w')
@@ -103,6 +110,8 @@ def clean(outdir,maxchange,nlte):
     #move optional parameter file to destination
     bash_command('cp ' + 'tmp.flag ' + dest)
 
+    return dest
+
 
 ##Run tlusty based on command line input parameters
 def tlusty_runs_input(params, model, nlte=False, copy=True):
@@ -112,14 +121,8 @@ def tlusty_runs_input(params, model, nlte=False, copy=True):
 
     print log_teff,log_qgrav,log_dmtot
 
-    lte='T'
-    if(nlte):
-        lte='F'
-    ltg='T'
-    if (model):
-        ltg='F'
 
-    outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy)
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
@@ -137,12 +140,8 @@ def tlusty_runs_model(model, nlte=False, copy=True):
     log_dmtot=np.log10(params[0][3])
     print log_teff,log_qgrav,log_dmtot
 
-    lte='T'
-    if(nlte):
-        lte='F'
-    ltg='F'
 
-    outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy)
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
@@ -152,14 +151,14 @@ def tlusty_runs_model(model, nlte=False, copy=True):
 
 
 ##Construct tlusty model based on info in myfile
-def tlusty_runs_file(myfile='params.in', nlte='false', copy=True):
+def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False):
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
-    lte='T'
-    if(nlte):
-        lte='F'
-    ltg='T'
+    # lte='T'
+    # if(nlte and not combo):
+    #     lte='F'
+    # ltg='T'
     model=''
 
     #for each set of parameters in our input file
@@ -172,17 +171,28 @@ def tlusty_runs_file(myfile='params.in', nlte='false', copy=True):
 
         if ncols>3:
             model=params[i][3]
-        if model:
-            ltg='F'
 
-        print lte, ltg, model
+        if combo:
+            nlte=False    
 
         #set up input files, then run tlusty, finally check for nominal convergence and move all output files to 
-        outdir=setup(log_qgrav, log_teff, log_dmtot, lte, ltg, model, copy)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy)
         run()
         maxchange=reltot()
         #Move tlusty output files to the appropriate directory
-        clean(outdir,maxchange,nlte)
+        outdir=clean(outdir,maxchange,nlte)
+        print outdir
+
+        #If we would like to calculate a combination on lte and nlte atmospheres
+        if combo:
+            nlte=True
+            outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True)
+            run()
+            maxchange=reltot()
+            #Move tlusty output files to the appropriate directory
+            outdir=clean(outdir,maxchange,nlte)
+
+
 
     return maxchange
 
@@ -194,6 +204,9 @@ def main():
         description='Wrapper for running TLUSTY')
     parser.add_argument('-n','--nlte',
         help='Switch on nlte',
+        action='store_true')
+    parser.add_argument('-c','--combo',
+        help='Combination of lte and nlte models when reading from input file',
         action='store_true')
     parser.add_argument('-f', '--file', 
         help='File containing input parameters; default is params.in', 
@@ -216,6 +229,7 @@ def main():
     model=args.model
     params=args.params
     copy=not args.nocopy
+    combo=args.combo
 
 
 
@@ -226,7 +240,7 @@ def main():
         print 'test'
         tlusty_runs_model(model, nlte, copy)
     else:
-        tlusty_runs_file(myfile, nlte, copy)
+        tlusty_runs_file(myfile, nlte, copy, combo)
 
 
 if __name__ == '__main__':
