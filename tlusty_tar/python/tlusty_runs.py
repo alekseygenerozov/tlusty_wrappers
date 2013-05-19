@@ -74,14 +74,19 @@ def reltot(file='fort.9'):
     niter= dat['ITER'][-1]
     dat_cut=dat[(dat["ITER"]==niter)]
 
-    
-    change=np.array(dat_cut["MAXIMUM"], dtype=float)
-    change=np.array(map(np.abs, change))
+    try:
+         change=np.array(dat_cut["MAXIMUM"], dtype=float)
+         change=np.array(map(np.abs, change))
+         maxchange=change.max()
+    except ValueError:
+         maxchange=1000
 
-    maxchange=change.max()
+    #Using numpy's is nan function to check if the maximum change is a nan
+    if np.isnan(maxchange):
+         maxchange=1000
     #I noticed some unconverged models may have all 0's and then some nans this is an ad hoc solution to cover this case.
     if maxchange==0:
-        return 1000
+         return 1000
 
     print niter, maxchange
     return maxchange
@@ -90,8 +95,6 @@ def reltot(file='fort.9'):
 ##Move all tlusty output files to the apropriate directory    
 def clean(outdir,maxchange,nlte):
     maxchange= np.log10(np.absolute(maxchange))
-    if np.isnan(maxchange):
-        maxchange=1000
 
     #constructing destination path
     dest='./'
@@ -155,10 +158,6 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False):
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
-    # lte='T'
-    # if(nlte and not combo):
-    #     lte='F'
-    # ltg='T'
     model=''
 
     #for each set of parameters in our input file
@@ -181,7 +180,8 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False):
         maxchange=reltot()
         #Move tlusty output files to the appropriate directory
         outdir=clean(outdir,maxchange,nlte)
-        print outdir
+        if maxchange>1:
+             continue
 
         #If we would like to calculate a combination on lte and nlte atmospheres
         if combo:
@@ -194,7 +194,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False):
 
 
 
-    return maxchange
+   # return maxchange
 
 
 
