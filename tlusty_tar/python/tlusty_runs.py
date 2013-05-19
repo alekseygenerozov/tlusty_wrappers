@@ -14,7 +14,7 @@ def bash_command(cmd):
 
 
 ##Setup input file for tlusty
-def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True):
+def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail'):
         lte='T'
         if(nlte):
             lte='F'
@@ -25,8 +25,10 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True):
         #files to which we will write input for tlusty
         f5=open('fort.5', 'w')
         f1=open('fort.1', 'w')
+
         #Tail of tlusty input file assumed to already be present in the current directory
-        tailf=open('tail', 'r')
+        print(tailname)
+        tailf=open(tailname, 'r')
 
         f1.write('1\n')
 
@@ -69,22 +71,25 @@ def run():
 
 ##Gets nominal convergence from the convergence log file in tlusty
 def reltot(file='fort.9'):
-    dat=ascii.read(file, header_start=1)
+    dat=np.genfromtxt(file, skip_header=3)
 
-    niter= dat['ITER'][-1]
-    dat_cut=dat[(dat["ITER"]==niter)]
+    niter= dat[-1, 0]
+    print niter
+    dat_cut=dat[(dat[:,0]==niter)]
+
 
     try:
-         change=np.array(dat_cut["MAXIMUM"], dtype=float)
+         change=dat_cut[:, 2:7]
          change=np.array(map(np.abs, change))
          maxchange=change.max()
+         print maxchange
     except ValueError:
          maxchange=1000
 
     #Using numpy's is nan function to check if the maximum change is a nan
     if np.isnan(maxchange):
          maxchange=1000
-    #I noticed some unconverged models may have all 0's and then some nans this is an ad hoc solution to cover this case.
+    #Probably not good if the maximum is precisely zero
     if maxchange==0:
          return 1000
 
@@ -117,7 +122,7 @@ def clean(outdir,maxchange,nlte):
 
 
 ##Run tlusty based on command line input parameters
-def tlusty_runs_input(params, model, nlte=False, copy=True):
+def tlusty_runs_input(params, model, nlte=False, copy=True, tailname='tail'):
     log_qgrav=params[0]
     log_teff=params[1]
     log_dmtot=params[2]
@@ -125,17 +130,17 @@ def tlusty_runs_input(params, model, nlte=False, copy=True):
     print log_teff,log_qgrav,log_dmtot
 
 
-    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
     clean(outdir,maxchange,nlte)
-    return maxchange
+    #return maxchange
 
 
 
 ##Run tlusty based on parameters found at the location of model
-def tlusty_runs_model(model, nlte=False, copy=True):
+def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail'):
     params=ascii.read(model + '/fort.5', data_start=0, data_end=1)
     #print params
     log_teff=np.log10(params[0][1])
@@ -144,17 +149,17 @@ def tlusty_runs_model(model, nlte=False, copy=True):
     print log_teff,log_qgrav,log_dmtot
 
 
-    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
     clean(outdir,maxchange,nlte)
-    return maxchange
+    #return maxchange
 
 
 
 ##Construct tlusty model based on info in myfile
-def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False):
+def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail'):
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
@@ -175,7 +180,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False):
             nlte=False    
 
         #set up input files, then run tlusty, finally check for nominal convergence and move all output files to 
-        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
         run()
         maxchange=reltot()
         #Move tlusty output files to the appropriate directory
@@ -186,7 +191,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False):
         #If we would like to calculate a combination on lte and nlte atmospheres
         if combo:
             nlte=True
-            outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True)
+            outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname)
             run()
             maxchange=reltot()
             #Move tlusty output files to the appropriate directory
@@ -217,6 +222,9 @@ def main():
     parser.add_argument('-nc', '--nocopy',
         help='This flag turns off the default behavior of copying tmp.flag from model location',
         action='store_true')
+    parser.add_argument('-ft', '--tail',
+        help='Stores name of file containing atomic data.',
+        default='tail')
     parser.add_argument('-p', '--params',
         metavar=('qgrav', 'teff', 'dmtot'),
         help='Stores required parameters for atmosphere. Need 3 positional arguments in the order qgrav, teff, dmtot',
@@ -230,17 +238,20 @@ def main():
     params=args.params
     copy=not args.nocopy
     combo=args.combo
+    tailname=args.tail
+
+    print(tailname)
 
 
 
 
     if params:
-        tlusty_runs_input(params, model, nlte, copy)
+        tlusty_runs_input(params, model, nlte, copy, tailname)
     elif  model:
         print 'test'
-        tlusty_runs_model(model, nlte, copy)
+        tlusty_runs_model(model, nlte, copy, tailname)
     else:
-        tlusty_runs_file(myfile, nlte, copy, combo)
+        tlusty_runs_file(myfile, nlte, copy, combo, tailname)
 
 
 if __name__ == '__main__':
