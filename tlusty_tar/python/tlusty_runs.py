@@ -11,6 +11,7 @@ from types import*
 def bash_command(cmd):
      process=subprocess.Popen(['/bin/bash', '-c', cmd],  stdout=subprocess.PIPE)
      process.wait()
+     return process
 
 
 ##Setup input file for tlusty
@@ -56,6 +57,13 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
 
         #If the location of the input model is not blank then copy model atmosphere to the current directory
         if model:
+           
+            process=bash_command('check ' + model + '/fort.7')
+
+            if len(process.stdout.readlines())==0:
+                print 'test'
+                loc=''
+                return loc
             bash_command('cp ' + model + '/fort.7 ' + './fort.8')
             if copy:
                 bash_command('cp ' + model + '/tmp.flag ' + './')
@@ -131,6 +139,8 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, tailname='tail'):
 
 
     outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
+    if not outdir:
+        return
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
@@ -150,6 +160,9 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail'):
 
 
     outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
+    if not outdir:
+        return
+
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
@@ -169,6 +182,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
     for i in range(0, len(params)): 
         f=open('fort.5', 'w')
         tailf=open('tail', 'r')
+        print(params[i])
         log_qgrav=params[i][0]
         log_teff=params[i][1]
         log_dmtot=params[i][2]
@@ -181,6 +195,8 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
 
         #set up input files, then run tlusty, finally check for nominal convergence and move all output files to 
         outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
+        if not outdir:
+            continue
         run()
         maxchange=reltot()
         #Move tlusty output files to the appropriate directory
