@@ -130,7 +130,7 @@ def clean(outdir,maxchange,nlte):
 
 
 ##Run tlusty based on command line input parameters
-def tlusty_runs_input(params, model, nlte=False, copy=True, tailname='tail'):
+def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail'):
     log_qgrav=params[0]
     log_teff=params[1]
     log_dmtot=params[2]
@@ -144,8 +144,22 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, tailname='tail'):
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
-    clean(outdir,maxchange,nlte)
+    outdir=clean(outdir,maxchange,nlte)
+    if maxchange>1:
+        return
     #return maxchange
+
+    #If we would like to calculate a combination on lte and nlte atmospheres
+    if combo:
+        nlte=True
+        print outdir
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname)
+        if not outdir: 
+            return
+        run()
+        maxchange=reltot()
+        #Move tlusty output files to the appropriate directory
+        outdir=clean(outdir,maxchange,nlte)
 
 
 
@@ -208,6 +222,8 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
         if combo:
             nlte=True
             outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname)
+            if not outdir:
+                continue
             run()
             maxchange=reltot()
             #Move tlusty output files to the appropriate directory
@@ -219,7 +235,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
 
 
 
-##driver; parse user input
+##Driver; parse user input
 def main():
     parser=argparse.ArgumentParser(
         description='Wrapper for running TLUSTY')
@@ -262,7 +278,7 @@ def main():
 
 
     if params:
-        tlusty_runs_input(params, model, nlte, copy, tailname)
+        tlusty_runs_input(params, model, nlte, copy, combo, tailname)
     elif  model:
         print 'test'
         tlusty_runs_model(model, nlte, copy, tailname)
