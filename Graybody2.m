@@ -22,7 +22,7 @@
 Clear["Global`*"]
 Needs["SigFig`"]
 Needs["CustomTicks`"]
-K\[Nu]=Solve[y^2 (1+y)==(\[Kappa]s/\[Kappa]es)^2 f, y]//StandardForm
+K\[Nu]=Solve[y^2 (1+y)==(x)^2 f, y]//StandardForm
 (*Physical constants in cgs units*)
 G=6.67 10^-8;  (*Newton's constant in cgs*)
 c=3 10^10 ; (*Speed of light in cgs*)
@@ -55,6 +55,7 @@ colors=colorfunc/@colorscale
 ]
 
 B[Teff_, fcol_:1]:=1/fcol^4 (2 h \[Nu]1^3/c^2)/(E^((h \[Nu]1)/( kb  fcol Teff))-1)
+B2[Teff_, \[Xi]_]:=(kb Teff)^3/(h c)^2 (2\[Xi]^3)/(E^\[Xi]-1)
 \[Nu]peak[Teff_]:=2.82 kb Teff/h
 
 
@@ -65,7 +66,7 @@ nstar[\[Nu]_]:=(R/(h \[Nu]))^(1/2)//Ceiling
 (*Saha equation*)
 fh[n_, T_]:=(1/n ((2\[Pi] me kb T)/h^2)^(3/2) E^(-R/(kb T))+1)^-1
 
-GrayBody3[T_, Q_, Dmtot_]:=Module[{\[Rho], H, \[Kappa]es, n, n2, \[Kappa], \[Kappa]r, \[Kappa]\[Nu], \[Nu]}, 
+Graybody3[T_, Q_, Dmtot_]:=Module[{\[Rho], H, \[Kappa]es, n, n2, \[Kappa], \[Kappa]r, \[Kappa]\[Nu], \[Nu]}, 
 \[Kappa]es=0.4;
 H=0.4/c \[Sigma] T^4/Q;
 \[Rho]=Dmtot/H;
@@ -99,45 +100,62 @@ int= int/(4 \[Sigma] T^3/\[Pi]);
 int=1/int
 ]
 
-
-
 (*Calculates graybody atmosphere using Taka's formalism for a particular Teff and gravity parameter. Free is a flag to switch between the free-free and bound-free opacities*)
-GrayBody[Teff_, Qg_, Free_:False, prec_:10^-8]:=Module[{\[Kappa]es, \[Kappa]s, \[Kappa]sb, \[Kappa]sf, \[Epsilon]s,  \[Xi], f, x  , K, \[Epsilon], Tp, \[CapitalXi], \[Rho]p, pr, pg, r, error},
+Graybody[Teff_, Qg_, Free_:False, prec_:10^-8]:=Module[{\[Kappa]es, \[Kappa]s, \[Kappa]sb, \[Kappa]sf, \[Epsilon]s,  \[Xi], f, x  , K, K\[Nu], \[Epsilon], Tp, \[CapitalXi], \[Rho]p, pr, pg, r, error, flux1, flux2},
 \[Kappa]es=0.4;
 (*Note that the below expression for \[Kappa]s assumes radiation pressure dominance. We also assume solar metallicities*)
 \[Kappa]sb=4.7 10^20 Sqrt[Qg] Tp^(-15/4);
 \[Kappa]sf=0.04 \[Kappa]sb;
 (*If the free-free opacity dominates; Note we assume a H-He atmosphere with solar abundances*)
 If[Free, \[Kappa]s= \[Kappa]sf, \[Kappa]s=\[Kappa]sb];
-(*\[Kappa]s=1.83 10^9 Sqrt[Qg] (Teff)^(-9/4)*)
+
+(*Finding \[Epsilon] as a function of \[Epsilon]s*)
+f=(\[Xi])^-3 (1-E^-\[Xi]);
+K\[Nu]=(y/.(Solve[y^2 (1+y)==(1-1/\[Epsilon]s)^-2 f, y][[1]]));
+\[Epsilon]=(1+K\[Nu]^-1)^-1;
+
+
+
 \[Epsilon]s=\[Kappa]s/(\[Kappa]s+\[Kappa]es);
+
 \[CapitalXi]=(0.873 \[Epsilon]s^(-1/6))/(1-0.127 \[Epsilon]s^(5/6)) 1/(1+(\[Epsilon]s^-1-1)^(2/3));
 r=FindRoot[Teff^4-\[CapitalXi]  Tp^4==0, {Tp, Teff}(*, EvaluationMonitor:> Print[ Tp, "  ", Tp//Im, "  ",-\[CapitalXi]  Tp^4//Im] *)];
 
 (*Plot[Teff^4- \[CapitalXi] Tp^4, {Tp, 0.99 Tp/.r, 1.01 Tp/.r}]*)
 (*Correction to total flux from scattering*)
+Print[r];
 Tp=Tp/.r;
-\[Kappa]s=(1+1/\[Epsilon]s)^-1;
-\[Xi]=(h \[Nu]1)/(kb Teff);
-f=(\[Xi])^-3 (1-E^-\[Xi]);
+
+(*\[Kappa]s=(1+1/\[Epsilon]s)^-1;*)
+
+(*x=\[Kappa]s/\[Kappa]es;*)
 (*Solve cubic equation for the ratio of absorption opacity to scattering opacity*)
+
 (*K=-(1/3)+2^(1/3)/(3 (-2+27 f x^2+Sqrt[-4+(-2+27 f x^2)^2])^(1/3))+(-2+27 f x^2+Sqrt[-4+(-2+27 f x^2)^2])^(1/3)/(3 2^(1/3));*)
-K=-(1/3)+(2^(1/3) \[Kappa]es^2)/(3 (-2 \[Kappa]es^6+27 f \[Kappa]es^4 \[Kappa]s^2+3 Sqrt[3] Sqrt[-4 f \[Kappa]es^10 \[Kappa]s^2+27 f^2 \[Kappa]es^8 \[Kappa]s^4])^(1/3))+(-2 \[Kappa]es^6+27 f \[Kappa]es^4 \[Kappa]s^2+3 Sqrt[3] Sqrt[-4 f \[Kappa]es^10 \[Kappa]s^2+27 f^2 \[Kappa]es^8 \[Kappa]s^4])^(1/3)/(3 2^(1/3) \[Kappa]es^2);
+
+(*flux1=15/\[Pi]^4  NIntegrate[(2 \[Epsilon]^(1/2))/(1+\[Epsilon]^(1/2)) E^-\[Xi]/f, {\[Xi],0, \[Infinity]}];
+flux2= \[CapitalXi] ;
+Print[flux1, flux2];*)
+
+
+\[Xi]=h \[Nu]1/(kb Tp);
+(*K=-(1/3)+(2^(1/3) \[Kappa]es^2)/(3 (-2 \[Kappa]es^6+27 f \[Kappa]es^4 \[Kappa]s^2+3 Sqrt[3] Sqrt[-4 f \[Kappa]es^10 \[Kappa]s^2+27 f^2 \[Kappa]es^8 \[Kappa]s^4])^(1/3))+(-2 \[Kappa]es^6+27 f \[Kappa]es^4 \[Kappa]s^2+3 Sqrt[3] Sqrt[-4 f \[Kappa]es^10 \[Kappa]s^2+27 f^2 \[Kappa]es^8 \[Kappa]s^4])^(1/3)/(3 2^(1/3) \[Kappa]es^2);*)
 (*Estimate density at the base of the photosphere for the peak frequency*)
-\[Rho]p= (3 c Qg)/(4 (\[Gamma]) \[Sigma] Tp^4    \[Kappa]es^2 (1+K)K)/.{\[Nu]1->\[Nu]peak[Teff], \[Gamma]->4/3};
+\[Rho]p= (3 c Qg)/(4 (\[Gamma]) \[Sigma] Tp^4    \[Kappa]es^2 (1+K\[Nu])K\[Nu])/.{\[Nu]1->\[Nu]peak[Teff], \[Gamma]->4/3};
 (*Estimate ratio of gas pressure to radiation pressure*)
 pr=(4\[Sigma])/(3c) Tp^4;
 pg= (\[Rho]p kb Tp)/(\[Mu]0 mp);
-\[Epsilon]=(1+1/K)^-1//Simplify;
+
 error=Abs[((\[CapitalXi] Tp^4/.r)-Teff^4)/Teff^4];
 
-Print[NIntegrate[2\[Pi] \[Epsilon]^(1/2)/(1+\[Epsilon]^(1/2)) B[Tp], {\[Nu]1, 0, 1.5 10^19}]//Chop," ",  \[Sigma] Teff^4];
+Print[NIntegrate[2\[Pi] \[Epsilon]^(1/2)/(1+\[Epsilon]^(1/2)) B[Tp], {\[Nu]1, 0, 10^19}]//Chop," ",  \[Sigma] Teff^4];
 
 If[error>prec, Print["Warning! Error in flux has exceeded the specified threshold. Error is ", error]];
 
 
 {pr/pg, Tp, \[Epsilon], ((\[CapitalXi] Tp^4/.r)-Teff^4)/Teff^4}
 ]
+
 (*Plots spectrum from unit 14 output file; this files is only produced when comptonization is turned on in tlusty*)
 PlotSpec[ dir_, color_:Black,xrange_:{}, nmu_:10, mu_:1]:=Module[{dir2, dat, int, \[Lambda], \[Nu], \[Lambda]h, \[Nu]h, \[Nu]peak, imu, peak, prange},
 dir2=StringReplace[dir, "/fort"~~__->""];
@@ -244,7 +262,7 @@ peak=sed[[peakloc,2]];
 myticks={{1.`*^14, Style["\!\(\*SuperscriptBox[\"10\", \"14\"]\)", FontFamily->Times, FontSize->14]},{2.`*^14, ""},{3.`*^14, ""},{4.`*^14, ""},{5.`*^14,""},{6.`*^14, ""},{7.`*^14, "" },{8.`*^14, ""},{9.`*^14, "" },{1.`*^15, Style["\!\(\*SuperscriptBox[\"10\", \"15\"]\)", FontFamily->Times, FontSize->14]},{2.`*^15, ""},{3.`*^15, ""},{4.`*^15,""},{5.`*^15, ""},{6.`*^15, ""},{7.`*^15, "" },{8.`*^15, ""},{9.`*^15, ""},{1.`*^16,Style["\!\(\*SuperscriptBox[\"10\", \"16\"]\)", FontFamily->Times, FontSize->14]},{2.`*^16, ""},{3.`*^16, ""},{4.`*^16, ""},{5.`*^16, ""},{6.`*^16, ""},{7.`*^16, ""},{8.`*^16, ""},{9.`*^16, ""}};
 
 (*Actually plotting the spectrum*)
-ListLogLogPlot[sed, Joined->True, PlotRange->{xrange, {10^-4  peak, 2 peak}},FrameLabel->{{ "\[Nu] \!\(\*SubscriptBox[\"F\", \"\[Nu]\"]\) [erg \!\(\*SuperscriptBox[\"cm\", 
+ListLogLogPlot[sed, Joined->True, PlotRange->{xrange, {10^-4  peak, 4 peak}},FrameLabel->{{ "\[Nu] \!\(\*SubscriptBox[\"F\", \"\[Nu]\"]\) [erg \!\(\*SuperscriptBox[\"cm\", 
 RowBox[{\"-\", \"2\"}]]\) s\!\(\*SuperscriptBox[\" \", 
 RowBox[{\"-\", \"1\"}]]\)]", None},{ "\[Nu] [s\!\(\*SuperscriptBox[\" \", 
 RowBox[{\"-\", \"1\"}]]\)]", OutForm[Teff, 2]}}, Frame->True,FrameTicks->{{Automatic, Automatic},{myticks, Automatic}},  PlotStyle->Directive[color], ImageSize->size(*, FrameStyle->Directive[FontFamily->"Times", FontSize->14], FrameTicksStyle->{Directive[FontFamily->"Times", 14],Directive[FontFamily->"Times", 14]}*)
@@ -318,10 +336,9 @@ t=params[[1]];
 q=params[[2]];
 Teff=10^t;
 Qg=10^q;
-(*Teff=10^4;
-Qg=5.01 10^-13;*)
-Tp=GrayBody[Teff, Qg][[2]];
-\[Epsilon]=GrayBody[Teff, Qg][[3]];
+
+Tp=Graybody[Teff, Qg][[2]];
+\[Epsilon]=Graybody[Teff, Qg][[3]];
 bb=\[Pi] B[Teff] ;
 gb=2\[Pi] \[Epsilon]^(1/2)/(1+\[Epsilon]^(1/2)) B[Tp] //Re;
 (*Print[NIntegrate[{bb, gb}, {\[Nu]1, 0, 10^19}]];*)
@@ -340,8 +357,8 @@ size=OptionValue[optsize];
 dir2 =StringReplace[dir, "/fort"~~__->""];
 (*Teff=10^4;
 Qg=5.01 10^-13;*)
-Tp=GrayBody[Teff, Qg][[2]];
-\[Epsilon]=GrayBody[Teff, Qg][[3]];
+Tp=Graybody[Teff, Qg][[2]];
+\[Epsilon]=Graybody[Teff, Qg][[3]];
 bb=\[Pi] B[Teff] \[Nu]1;
 gb=\[Pi] (2\[Epsilon]^(1/2))/(1+\[Epsilon]^(1/2)) B[Tp] \[Nu]1//Re;
 tlustyspec=PlotF[dir2 <> "/fort.13"(*,Green*),optrange->{0.1 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size, optcol->Red];
@@ -467,10 +484,18 @@ ne=Table[nef[[i]][tau0], {i, 1, Length[\[Nu]]}];
 \[Epsilon]=\[Kappa]/(\[Kappa]+\[Sigma]);
 
 gb1=Table[{\[Nu][[i]], 2\[Pi] \[Nu][[i]](B[T[[i]]]/.{\[Nu]1->\[Nu][[i]]})   (\[Epsilon][[i]]^(1/2))/(1+\[Epsilon][[i]]^(1/2))}, {i, 1, Length[\[Nu]]}];
+(*peak=Max[gb1[[All, 2]]];*)
+
+(*Manually entered tick marks for plotting the spectrum*)
+(*myticks={{1.`*^14, Style["10^14", FontFamily->Times, FontSize->14]},{2.`*^14, ""},{3.`*^14, ""},{4.`*^14, ""},{5.`*^14,""},{6.`*^14, ""},{7.`*^14, "" },{8.`*^14, ""},{9.`*^14, "" },{1.`*^15, Style["10^15", FontFamily->Times, FontSize->14]},{2.`*^15, ""},{3.`*^15, ""},{4.`*^15,""},{5.`*^15, ""},{6.`*^15, ""},{7.`*^15, "" },{8.`*^15, ""},{9.`*^15, ""},{1.`*^16,Style["10^16", FontFamily->Times, FontSize->14]},{2.`*^16, ""},{3.`*^16, ""},{4.`*^16, ""},{5.`*^16, ""},{6.`*^16, ""},{7.`*^16, ""},{8.`*^16, ""},{9.`*^16, ""}};
+
+(*Actually plotting the spectrum*)
+gp1=ListLogLogPlot[gb1, Joined->True, PlotRange->{xrange, {10^-4  peak, 2 peak}},FrameLabel->{{ "\[Nu] Subscript[F, \[Nu]] [erg cm^-2 s ^-1]", None},{ "\[Nu] [s ^-1]", OutForm[Teff, 2]}}, Frame->True,FrameTicks->{{Automatic, Automatic},{myticks, Automatic}},  PlotStyle->Directive[color], ImageSize->size(*, FrameStyle->Directive[FontFamily->"Times", FontSize->14], FrameTicksStyle->{Directive[FontFamily->"Times", 14],Directive[FontFamily->"Times", 14]}*)
+(*PlotLabel->Style[OutForm[Teff,2]//ToString,FontFamily->"Times", FontSize->14]*)]*)
+
 tlustyspec=PlotF[dir<> "/fort.13", optrange->{0.1 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size, optcol->Red];
 gp1=ListLogLogPlot[gb1, Joined->True];
-
-Show[tlustyspec,  gp1]
+Show[tlustyspec, gp1]
 
 
 ]
@@ -654,7 +679,7 @@ Dmtot=10^m;
 
 (*Teff=10^4;
 Qg=5.01 10^-13;*)
-gb=GrayBody3[Teff, Qg, Dmtot];
+gb=Graybody3[Teff, Qg, Dmtot];
 
 
 bb=\[Pi] B[Teff] \[Nu]1;
