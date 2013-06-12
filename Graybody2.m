@@ -30,7 +30,7 @@ c=3 10^10 ; (*Speed of light in cgs*)
 kb=1.38 10^-16;
 \[Mu]0=0.615;
 mp=1.67 10^-24;
-me=9 10^-28;
+me=9.11 10^-28;
 (*Stefan-Boltzmann constant in cgs*)
 \[Sigma]=5.67 10^-5;
 h=6.63 10^-27;
@@ -110,7 +110,7 @@ Graybody[Teff_, Qg_, Free_:False, prec_:10^-8]:=Module[{\[Kappa]es, \[Kappa]s, \
 If[Free, \[Kappa]s= \[Kappa]sf, \[Kappa]s=\[Kappa]sb];
 
 (*Finding \[Epsilon] as a function of \[Epsilon]s*)
-f=(\[Xi])^-3 (1-E^-\[Xi]);
+
 K\[Nu]=(y/.(Solve[y^2 (1+y)==(1-1/\[Epsilon]s)^-2 f, y][[1]]));
 \[Epsilon]=(1+K\[Nu]^-1)^-1;
 
@@ -123,7 +123,7 @@ r=FindRoot[Teff^4-\[CapitalXi]  Tp^4==0, {Tp, Teff}(*, EvaluationMonitor:> Print
 
 (*Plot[Teff^4- \[CapitalXi] Tp^4, {Tp, 0.99 Tp/.r, 1.01 Tp/.r}]*)
 (*Correction to total flux from scattering*)
-Print[r];
+
 Tp=Tp/.r;
 
 (*\[Kappa]s=(1+1/\[Epsilon]s)^-1;*)
@@ -139,6 +139,7 @@ Print[flux1, flux2];*)
 
 
 \[Xi]=h \[Nu]1/(kb Tp);
+f=(\[Xi])^-3 (1-E^-\[Xi]);
 (*K=-(1/3)+(2^(1/3) \[Kappa]es^2)/(3 (-2 \[Kappa]es^6+27 f \[Kappa]es^4 \[Kappa]s^2+3 Sqrt[3] Sqrt[-4 f \[Kappa]es^10 \[Kappa]s^2+27 f^2 \[Kappa]es^8 \[Kappa]s^4])^(1/3))+(-2 \[Kappa]es^6+27 f \[Kappa]es^4 \[Kappa]s^2+3 Sqrt[3] Sqrt[-4 f \[Kappa]es^10 \[Kappa]s^2+27 f^2 \[Kappa]es^8 \[Kappa]s^4])^(1/3)/(3 2^(1/3) \[Kappa]es^2);*)
 (*Estimate density at the base of the photosphere for the peak frequency*)
 \[Rho]p= (3 c Qg)/(4 (\[Gamma]) \[Sigma] Tp^4    \[Kappa]es^2 (1+K\[Nu])K\[Nu])/.{\[Nu]1->\[Nu]peak[Teff], \[Gamma]->4/3};
@@ -148,13 +149,31 @@ pg= (\[Rho]p kb Tp)/(\[Mu]0 mp);
 
 error=Abs[((\[CapitalXi] Tp^4/.r)-Teff^4)/Teff^4];
 
-Print[NIntegrate[2\[Pi] \[Epsilon]^(1/2)/(1+\[Epsilon]^(1/2)) B[Tp], {\[Nu]1, 0, 10^19}]//Chop," ",  \[Sigma] Teff^4];
-
+(*Print[NIntegrate[\[Pi] B[Teff], {\[Nu]1, 0, 10^20}], NIntegrate[2\[Pi] \[Epsilon]^(1/2)/(1+\[Epsilon]^(1/2)) B[Tp], {\[Nu]1, 0, 10^20}]//Chop," ",  \[Sigma] Teff^4];*)
 If[error>prec, Print["Warning! Error in flux has exceeded the specified threshold. Error is ", error]];
 
 
 {pr/pg, Tp, \[Epsilon], ((\[CapitalXi] Tp^4/.r)-Teff^4)/Teff^4}
 ]
+
+(*Function takes list of annuli parameters and outputs a list of the total disk flux*)
+GraybodyDiskFlux[params_]:=Module[{\[Epsilon],Tp,\[Nu]lo, \[Nu]hi, \[Nu]pts, tq, gb}, tq=dat[[All, {3,5}]];
+tq=params[[All, {3,5}]];
+\[Epsilon]=Map[Graybody[#[[1]],#[[2]]]&,10^tq];
+Tp=\[Epsilon][[All,2]];
+\[Epsilon]=\[Epsilon][[All,3]];
+
+\[Nu]lo=Log10[2.4 10^14];
+\[Nu]hi=Log10[5 10^19];
+\[Nu]pts=Range[\[Nu]lo, \[Nu]hi, 0.02];
+
+gb=2\[Pi] \[Epsilon]^(1/2)/(\[Epsilon]^(1/2)+1)*(B/@(Tp));
+gb=gb/.\[Nu]1->10^\[Nu]pts;
+gb=gb//Chop;
+
+Transpose[{10^\[Nu]pts, 2*\[Pi]*params[[All,1]]*params[[All,2]]*gb//Total}]
+]
+
 
 (*Plots spectrum from unit 14 output file; this files is only produced when comptonization is turned on in tlusty*)
 PlotSpec[ dir_, color_:Black,xrange_:{}, nmu_:10, mu_:1]:=Module[{dir2, dat, int, \[Lambda], \[Nu], \[Lambda]h, \[Nu]h, \[Nu]peak, imu, peak, prange},
@@ -304,6 +323,11 @@ sq=StringCases[s, RegularExpression["q[\-0-9]*"]]//Flatten;
 q=StringCases[sq, "q"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# 0.1)&;
 {t, q, m}
 ]
+(*Function which gives model for a given set of parameters, with the assumed format corresponding to the output form from ParseFile*)
+ReverseParse[params_?ListQ]:=Module[{},
+"t"<>(params[[1]]*10//ToString)<>"m"<>(params[[3]]*10//ToString)<>"q"<>(params[[2]]*10//ToString)<>"/converged"
+]
+
 
 (*Parses file name to infer parameters associated with the model, differs from the above function only in t*)
 ParseFile2[file_]:=Module[{s, m,t, q, sm, st, sq},
