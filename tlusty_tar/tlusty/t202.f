@@ -13679,6 +13679,7 @@ C
             ptint=ptint+(dm(id)-dm(id-1))*(ptotal(id)/dens(id)+
      *            ptotal(id-1)/dens(id-1))*half
          END IF
+         
          GRVL=0.
          IF(GRV.GT.0.) GRVL=LOG10(GRV)
          HMECH=SIG4P*TEFF**4*(UN-THETAV(ID))
@@ -13698,6 +13699,7 @@ C
   698    format(i3,1p11d11.4)
          end if
    70 CONTINUE
+      write(110, *) ptint/ZD(1)
       if(idisk.eq.1) then
          if(pgint.gt.0.) alpgav=omeg32*wbar/pgint*dm(nd)
          if(ptint.gt.0.) alptav=omeg32*wbar/ptint*dm(nd)
