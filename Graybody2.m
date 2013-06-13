@@ -21,7 +21,10 @@
 
 Clear["Global`*"]
 Needs["SigFig`"]
+Needs["PlotLegends`"]
 Needs["CustomTicks`"]
+
+
 K\[Nu]=Solve[y^2 (1+y)==(x)^2 f, y]//StandardForm
 (*Physical constants in cgs units*)
 G=6.67 10^-8;  (*Newton's constant in cgs*)
@@ -47,6 +50,19 @@ ions={{"H11",2.1785304`*^-11},{"H12",5.446326`*^-12},{"H13",2.4205893`*^-12},{"H
 ionshhe={{"H11",2.1785304`*^-11},{"H12",5.446326`*^-12},{"H13",2.4205893`*^-12},{"H14",1.3615815`*^-12},{"H15",1,8.7141216`*^-13},{"H16",6.0514734`*^-13},{"H17",4.4459804`*^-13},{"H18",3.4039538`*^-13},{"He1",3.9389425`*^-11},{"He21",8.7176979`*^-11},{"He22",2.1794245`*^-11},{"He23",2,9.686331`*^-12},{"He24",2,5.4485612`*^-12}}
 
 mydir="/home/aleksey/First_Year_Project/tlusty_tar/examples/aleksey_tlusty_runs"
+
+Options[Edge]={metals->False}
+Edge[\[Nu]_, OptionsPattern[]]:=Module[{en, pos,close, ion,m, ions2},
+m=OptionValue[metals];
+If[m, ions2=ions, ions2=ionshhe];
+(*Calculate energy in cgs units*)
+en=h \[Nu];
+close=Nearest[ions2[[All,2]], en][[1]];
+pos=Position[ions2[[All, 2]],x_/; Abs[x-close]/close<10^-6];
+ion=Extract[ions2, pos]//Flatten;
+{ion[[1]], ion[[2]]/h}
+
+]
 
 ColGrad[n_, grad_:"Rainbow"]:=Module[{colorfunc, colors, colorscale},
 colorscale=Range[0, 1, 1/(n-1)];
@@ -114,8 +130,6 @@ If[Free, \[Kappa]s= \[Kappa]sf, \[Kappa]s=\[Kappa]sb];
 K\[Nu]=(y/.(Solve[y^2 (1+y)==(1-1/\[Epsilon]s)^-2 f, y][[1]]));
 \[Epsilon]=(1+K\[Nu]^-1)^-1;
 
-
-
 \[Epsilon]s=\[Kappa]s/(\[Kappa]s+\[Kappa]es);
 
 \[CapitalXi]=(0.873 \[Epsilon]s^(-1/6))/(1-0.127 \[Epsilon]s^(5/6)) 1/(1+(\[Epsilon]s^-1-1)^(2/3));
@@ -174,7 +188,6 @@ gb=gb//Chop;
 Transpose[{10^\[Nu]pts, 2*\[Pi]*params[[All,1]]*params[[All,2]]*gb//Total}]
 ]
 
-
 (*Plots spectrum from unit 14 output file; this files is only produced when comptonization is turned on in tlusty*)
 PlotSpec[ dir_, color_:Black,xrange_:{}, nmu_:10, mu_:1]:=Module[{dir2, dat, int, \[Lambda], \[Nu], \[Lambda]h, \[Nu]h, \[Nu]peak, imu, peak, prange},
 dir2=StringReplace[dir, "/fort"~~__->""];
@@ -227,15 +240,13 @@ atm=Partition[atm, blocks][[All, 1;;4]];
 atm=Flatten/@Transpose[{m, atm}]
 
 ]
+
 (*Plots convergence files outputted by tlusty*)
 PConv[dir_]:=Module[{dir2, ConvData, maxchange, maxchange2, iter, colorscale, color, colors, params, t, q, Teff, Qg},
 dir2=StringReplace[dir, "/fort"~~__->""];
-
 params=StringCases[dir2, RegularExpression["t[\-0-9]*m[\-0-9]*q[\-0-9]*"]];
-
 ConvData=Import[dir2<>"/fort.9", "Table", "HeaderLines"->3]//SplitBy[#, First]&;
 ConvData=Reverse/@ConvData;
-
 
 maxchange=Abs[ConvData[[All, All, -3]]];
 maxchange2= Max/@maxchange;
@@ -246,13 +257,12 @@ color=ColorData["Rainbow"][#]&;
 colors=color/@colorscale;
 GraphicsGrid[{{ListLogPlot[maxchange, Joined->True, Frame->True,FrameLabel->params, PlotStyle->colors, ImageSize->Medium],
 ListLogPlot[maxchange2, Joined->True, Frame->True]}}]
-
-
 ]
 
 (*Plot tlusty output for flux from TLUSTY unit 13 file*)
-Options[PlotF]={optcol->Green, optrange->All, optorder->True, optsize->Large}
-PlotF[dir_?StringQ, OptionsPattern[]]:=Module[{dir2, fluxdat, peak, sed, peakf, peakloc,bad, prange, color, xrange, size, myticks, params, t, q,Qg, Teff},
+Options[PlotF]={optcol->Green, optrange->{10^14, 10^17}, optsize->Large}
+PlotF[dir_?StringQ, OptionsPattern[]]:=Module[
+{dir2, fluxdat, peak, sed, peakf, peakloc,bad, prange, color, xrange, size, myticks, myticks2, params, t, q,Qg, Teff,x},
 color=OptionValue[optcol];
 xrange=OptionValue[optrange];
 size=OptionValue[optsize];
@@ -264,13 +274,13 @@ If[fluxdat==err, Return[err]];
 
 params=ParseFile[dir2];
 t=params[[1]];
-q=params[[2]];
+q=params[[3]];
 Teff=10^t;
 Qg=10^q;
 
 fluxdat[[All,2]]=4\[Pi] fluxdat[[All,2]];
 sed=Transpose[{fluxdat[[All,1]],fluxdat[[All, 1]]*fluxdat[[All,2]]}];
-(*Output is sometimes formatted in such a way that mathematica does not recognize it as a real number*)
+(*Output is sometimes formatted in such a way that mathematica does not recognize it as a real number. Tends to be at edges of frequency space*)
 bad=DeleteCases[sed, x_/;x[[2]]\[Element]Reals];
 sed=Complement[sed, bad];
 (*Get location of peak for setting the range of the plot*)
@@ -278,17 +288,19 @@ peakloc=sed[[All,2]]//Ordering//#[[-1]]&;
 peak=sed[[peakloc,2]];
 
 (*Manually entered tick marks for plotting the spectrum*)
-myticks={{1.`*^14, Style["\!\(\*SuperscriptBox[\"10\", \"14\"]\)", FontFamily->Times, FontSize->14]},{2.`*^14, ""},{3.`*^14, ""},{4.`*^14, ""},{5.`*^14,""},{6.`*^14, ""},{7.`*^14, "" },{8.`*^14, ""},{9.`*^14, "" },{1.`*^15, Style["\!\(\*SuperscriptBox[\"10\", \"15\"]\)", FontFamily->Times, FontSize->14]},{2.`*^15, ""},{3.`*^15, ""},{4.`*^15,""},{5.`*^15, ""},{6.`*^15, ""},{7.`*^15, "" },{8.`*^15, ""},{9.`*^15, ""},{1.`*^16,Style["\!\(\*SuperscriptBox[\"10\", \"16\"]\)", FontFamily->Times, FontSize->14]},{2.`*^16, ""},{3.`*^16, ""},{4.`*^16, ""},{5.`*^16, ""},{6.`*^16, ""},{7.`*^16, ""},{8.`*^16, ""},{9.`*^16, ""}};
+myticks={{1.`*^14, Style["\!\(\*SuperscriptBox[\"10\", \"14\"]\)", FontFamily->Times, FontSize->14]},{2.`*^14, ""},{3.`*^14, ""},{4.`*^14, ""},{5.`*^14,""},{6.`*^14, ""},{7.`*^14, "" },{8.`*^14, ""},{9.`*^14, "" },{1.`*^15, Style["\!\(\*SuperscriptBox[\"10\", \"15\"]\)", FontFamily->Times, FontSize->14]},{2.`*^15, ""},{3.`*^15, ""},{4.`*^15,""},{5.`*^15, ""},{6.`*^15, ""},{7.`*^15, "" },{8.`*^15, ""},{9.`*^15, ""},{1.`*^16,Style["\!\(\*SuperscriptBox[\"10\", \"16\"]\)", FontFamily->Times, FontSize->14]},{2.`*^16, ""},{3.`*^16, ""},{4.`*^16, ""},{5.`*^16, ""},{6.`*^16, ""},{7.`*^16, ""},{8.`*^16, ""},{9.`*^16, ""}, {1.`*^17,Style["\!\(\*SuperscriptBox[\"10\", \"17\"]\)", FontFamily->Times, FontSize->14] }};
+myticks2={{1.`*^14, ""},{2.`*^14, ""},{3.`*^14, ""},{4.`*^14, ""},{5.`*^14,""},{6.`*^14, ""},{7.`*^14, "" },{8.`*^14, ""},{9.`*^14, "" },{1.`*^15, ""},{2.`*^15, ""},{3.`*^15, ""},{4.`*^15,""},{5.`*^15, ""},{6.`*^15, ""},{7.`*^15, "" },{8.`*^15, ""},{9.`*^15, ""},{1.`*^16,""},{2.`*^16, ""},{3.`*^16, ""},{4.`*^16, ""},{5.`*^16, ""},{6.`*^16, ""},{7.`*^16, ""},{8.`*^16, ""},{9.`*^16, ""}, {1.`*^17,"" }};
 
 (*Actually plotting the spectrum*)
 ListLogLogPlot[sed, Joined->True, PlotRange->{xrange, {10^-4  peak, 4 peak}},FrameLabel->{{ "\[Nu] \!\(\*SubscriptBox[\"F\", \"\[Nu]\"]\) [erg \!\(\*SuperscriptBox[\"cm\", 
-RowBox[{\"-\", \"2\"}]]\) s\!\(\*SuperscriptBox[\" \", 
-RowBox[{\"-\", \"1\"}]]\)]", None},{ "\[Nu] [s\!\(\*SuperscriptBox[\" \", 
-RowBox[{\"-\", \"1\"}]]\)]", OutForm[Teff, 2]}}, Frame->True,FrameTicks->{{Automatic, Automatic},{myticks, Automatic}},  PlotStyle->Directive[color], ImageSize->size(*, FrameStyle->Directive[FontFamily->"Times", FontSize->14], FrameTicksStyle->{Directive[FontFamily->"Times", 14],Directive[FontFamily->"Times", 14]}*)
-(*PlotLabel->Style[OutForm[Teff,2]//ToString,FontFamily->"Times", FontSize->14]*)]
+RowBox[{\"-\", \"2\"}]]\) \!\(\*SuperscriptBox[\"s\", 
+RowBox[{\"-\", \"1\"}]]\)]", None},{ "\[Nu] [\!\(\*SuperscriptBox[\"s\", 
+RowBox[{\"-\", \"1\"}]]\)]", None}}, Frame->True,FrameTicks->{{Automatic, Automatic},{myticks, myticks2}},  PlotStyle->Directive[color], ImageSize->size]
+
 ]
+
 (*User can also pass list of directories to PlotF ot easily plot multiple spectra. This function then call the PlotF function above for each of the directories*)
-PlotF[dir_?ListQ, OptionsPattern[]]:=Module[{color, xrange, lc, lr, params,dir2, spectra, reorder,size}, 
+PlotF[dir_?ListQ, OptionsPattern[]]:=Module[{color, xrange, lc, lr, params,dir2, spectra, spectra2, reorder,size, speclegend, line}, 
 color=OptionValue[optcol];
 
 If[Not[ListQ[color]] , color={color}];
@@ -296,41 +308,27 @@ If[color=={"Grad"}, color=ColGrad[dir//Length]];
 lc=color//Length;
 
 xrange=OptionValue[optrange];
-reorder=OptionValue[optorder];
+(*reorder=OptionValue[optorder];*)
 size=OptionValue[optsize];
-
-
-If[reorder,params=ParseFile/@dir;
-dir2=dir[[params[[All, 1]]//Ordering]]//Reverse, dir2=dir];
+(*If[reorder,params=ParseFile/@dir;
+dir2=dir[[params[[All, 1]]//Ordering]]//Reverse, dir2=dir];*)
 (*lr=xrange//Length;*)
-
-
-spectra=Table[PlotF[dir2[[i]], optcol->color[[Mod[i, lc, 1]]], optrange->xrange, optsize->size], {i, 1, dir2//Length}];
+color=Table[color[[Mod[i, lc, 1]]],{i, 1, dir//Length}];
+spectra=Table[PlotF[dir[[i]], optcol->color[[i]], optrange->xrange, optsize->size], {i, 1, dir//Length}];
 spectra=DeleteCases[spectra, err];
 
-Show[spectra]
-]
+params=ParseFile/@dir;
 
+line=Line[{{0,0}, {1,0}}];
+speclegend=Table[{Graphics[{color[[i]], line} ], "\!\(\*SubscriptBox[\"T\", \"eff\"]\)="<>ToString[params[[i, 1]]//N]<>" "<> "m="<>ToString[params[[i, 2]]//N]<>" "<> "\!\(\*SubscriptBox[\"Q\", \"g\"]\)="<>ToString[params[[i, 3]]//N]   } , {i, 1, dir//Length} ];
+speclegend=Graphics[Legend[speclegend, LegendShadow->False]];
 
-(*Parses file name to infer parameters associated with the model*)
-ParseFile[file_]:=Module[{s, m,t, q, sm, st, sq},
-s=StringCases[file, RegularExpression["t[\-0-9]*m[\-0-9]*q[\-0-9]*"]];
-st=StringCases[s, RegularExpression["t[\-0-9]*"]]//Flatten;
-t=StringCases[st, "t"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# 0.1)&;
-sm=StringCases[s, RegularExpression["m[\-0-9]*"]]//Flatten;
-m=StringCases[sm, "m"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# 0.1)&;
-sq=StringCases[s, RegularExpression["q[\-0-9]*"]]//Flatten;
-q=StringCases[sq, "q"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# 0.1)&;
-{t, q, m}
+spectra2=spectra[[params[[All, 1]]//Ordering//Reverse]];
+GraphicsRow[{Show[spectra2], speclegend}]
 ]
-(*Function which gives model for a given set of parameters, with the assumed format corresponding to the output form from ParseFile*)
-ReverseParse[params_?ListQ]:=Module[{},
-"t"<>(params[[1]]*10//ToString)<>"m"<>(params[[3]]*10//ToString)<>"q"<>(params[[2]]*10//ToString)<>"/converged"
-]
-
 
 (*Parses file name to infer parameters associated with the model, differs from the above function only in t*)
-ParseFile2[file_]:=Module[{s, m,t, q, sm, st, sq},
+ParseFile[file_]:=Module[{s, m,t, q, sm, st, sq},
 s=StringCases[file, RegularExpression["t[\-0-9]*m[\-0-9]*q[\-0-9]*"]];
 st=StringCases[s, RegularExpression["t[\-0-9]*"]]//Flatten;
 t=StringCases[st, "t"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# (1/10))&;
@@ -338,14 +336,13 @@ sm=StringCases[s, RegularExpression["m[\-0-9]*"]]//Flatten;
 m=StringCases[sm, "m"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# (1/10))&;
 sq=StringCases[s, RegularExpression["q[\-0-9]*"]]//Flatten;
 q=StringCases[sq, "q"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# (1/10))&;
-{q, t,  m}
-]
-(*Function which gives model for a given set of parameters, with the assumed format corresponding to the output form from ParseFile2*)
-ReverseParse2[params_?ListQ]:=Module[{},
-"t"<>(params[[2]]*10//ToString)<>"m"<>(params[[3]]*10//ToString)<>"q"<>(params[[1]]*10//ToString)<>"/converged"
+{t, m, q}
 ]
 
-
+(*Function which gives model for a given set of parameters, with the assumed format corresponding to the output form from ParseFile*)
+ReverseParse[params_?ListQ]:=Module[{},
+"t"<>(params[[1]]*10//ToString)<>"m"<>(params[[2]]*10//ToString)<>"q"<>(params[[3]]*10//ToString)<>"/converged"
+]
 
 (*Compare tlusty unit 13 file to graybody output*)
 Options[GraybodyCompare]={ optsize->Large}
@@ -353,11 +350,10 @@ GraybodyCompare[dir_?StringQ, OptionsPattern[]]:=
 Module[{dir2, Tp, \[Epsilon], bb, gb, tlustyspec, gp, t, q, params, Teff, Qg, size}, 
 size=OptionValue[optsize];
 
-
 dir2=StringReplace[dir, "/fort"~~__->""];
 params=ParseFile[dir2];
 t=params[[1]];
-q=params[[2]];
+q=params[[3]];
 Teff=10^t;
 Qg=10^q;
 
@@ -373,85 +369,6 @@ Show[{tlustyspec, gp}]
 
 ]
 
-(*Same as above only user can input Teff and Qg that do not necessarily correspond to the tlusty spectrum*)
-(*GraybodyCompare[dir_?StringQ, Teff_, Qg_, OptionsPattern[]]:=
-Module[{ dir2, Tp, \[Epsilon], bb, gb, tlustyspec, gp, size}, 
-size=OptionValue[optsize];
-
-dir2 =StringReplace[dir, "/fort"~~__->""];
-(*Teff=10^4;
-Qg=5.01 10^-13;*)
-Tp=Graybody[Teff, Qg][[2]];
-\[Epsilon]=Graybody[Teff, Qg][[3]];
-bb=\[Pi] B[Teff] \[Nu]1;
-gb=\[Pi] (2\[Epsilon]^(1/2))/(1+\[Epsilon]^(1/2)) B[Tp] \[Nu]1//Re;
-tlustyspec=PlotF[dir2 <> "/fort.13"(*,Green*),optrange->{0.1 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size, optcol->Red];
-gp=LogLogPlot[{bb, gb}, {\[Nu]1, 0.1 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, PlotStyle->{Black, Blue}];
-(*tlustylte=PlotSpec["~/First_Year_Project/tlusty_tar/examples/aleksey_tlusty_runs/t40_solar/t40m56q-143/lteconv/fort.14", Blue];
-tlustygray= PlotSpec["~/First_Year_Project/tlusty_tar/examples/aleksey_tlusty_runs/t40_solar_gray/t40m56q-143/lteconv/fort.14", Purple];*)
-Show[{tlustyspec, gp}]
-
-]*)
-
-(*Secondary graybody comparison function where extinction probability is evaluated using the opacity is outputted from TLUSTY itself. *)
-(*Options[GraybodyCompare2]={optsize->Large}
-GraybodyCompare2[dir_?StringQ, OptionsPattern[]]:=Module[{dir2, o, atm,  dens , \[Chi], \[Chi]all, \[Kappa]all, \[Kappa]r, \[Tau], near, pos, \[Kappa], \[Sigma], ne,\[Epsilon], \[Mu]e, T,\[Nu],z, \[Delta]z, spec, planck, tlustyspec, gb, gp, gb1, gp1, params, t, q, Teff, Qg, size},
-size=OptionValue[optsize];
-
-dir2=StringReplace[dir, "/fort"~~__->""];
-params=ParseFile[dir2];
-t=params[[1]];
-q=params[[2]];
-Teff=10^t;
-Qg=10^q;
-o=Opac[dir2<> "/fort.85"];
-atm=ParseAtm[dir2<>"/fort.7"];
-
-T=atm[[All,2]];
-ne=atm[[All,3]];
-dens=atm[[All,4]];
-z=atm[[All,5]];
-
-\[Delta]z=z//Differences;
-o=o//Reverse;
-
-\[Chi]=o[[All,2]];
-\[Nu]=o[[All,1]];
-\[Tau]=-#[[2;;]] \[Delta]z dens[[2;;]]&/@\[Chi];
-
-near=Nearest[#,2/3]&/@\[Tau];
-
-pos=Table[Position[ \[Tau][[i]], near[[i,1]]], {i, 1, Length[near]}];
-(*Total opacity at the photosphere*)
-(*\[Chi]all=Table[Extract[Transpose[\[Chi]],pos[[i]]], {i, 1, Length[pos]}];*)
-\[Chi]=Table[Extract[\[Chi][[i]],pos[[i]]], {i, 1, Length[\[Chi]]}]//Flatten;
-ne=Table[Extract[ne, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-dens=Table[Extract[dens, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-T=Table[Extract[T, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-\[Mu]e=ne mp/dens;
-\[Sigma]=\[Mu]e 0.4;
-(*Calculating the true absorption opacity from the TLUSTY outputted opacity by subtracting the electron scattering opacity*)
-\[Kappa]=\[Chi]-\[Sigma];
-(*\[Kappa]all=\[Chi]all-\[Sigma];*)
-(*\[Kappa]r=Table[Rosseland[\[Nu], \[Kappa][[i]],T[[i]]], {i, 1, Length[pos]}];*)
-(*\[Kappa]=If[#<0, 0, #]&/@\[Kappa];*)
-\[Epsilon]=\[Kappa]/(\[Kappa]+\[Sigma]);
-
-
-
-gb1=Table[{\[Nu][[i]],If[ near[[i,1]]<10, 2\[Pi] \[Nu][[i]](B[T[[i]]]/.{\[Nu]1->\[Nu][[i]]})   (\[Epsilon][[i]]^(1/2))/(1+\[Epsilon][[i]]^(1/2)), 0]}, {i, 1, Length[\[Nu]]}];
-
-tlustyspec=PlotF[dir2<> "/fort.13"(*,Green*),optrange-> {0.05 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size, optcol->Red];
-gp1=ListLogLogPlot[gb1, Joined->True];
-
-Show[tlustyspec, gp1]
-(*Manipulate[
-gb=Table[{\[Nu][[i]], 2\[Pi] \[Nu][[i]](B[Tp]/.{\[Nu]1->\[Nu][[i]]})   (\[Epsilon][[i]]^(1/2))/(1+\[Epsilon][[i]]^(1/2))}, {i, 1, Length[\[Nu]]}];
-gp=ListLogLogPlot[gb, PlotRange->{{0.1 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]},All}, Joined->True];
-GraphicsColumn[{Show[{tlustyspec, gp1}],Show[{ tlustyspec, gp}]}]
-, {{Tp, Teff}, Teff/2,2 Teff}
-, TrackedSymbols:>Tp]*)]*)
-
 (*Secondary graybody comparison function where extinction probability is evaluated using the opacity is outputted from TLUSTY itself. *)
 Options[GraybodyCompare2]={optsize->Large}
 GraybodyCompare2[dir_?StringQ, OptionsPattern[]]:=Module[{dir2, o, atm,  dens , \[Chi], \[Chi]all, \[Kappa]all, \[Kappa]r, \[Tau], near, pos, \[Kappa], \[Sigma], ne,\[Epsilon], \[Mu]e, T,\[Nu],z, nef, Tf, \[Chi]f, densf, m, tau0, keep, \[Delta]z, spec, planck, tlustyspec, gb, gp, gb1, gp1, params, t, q, Teff, Qg, size},
@@ -460,10 +377,9 @@ size=OptionValue[optsize];
 dir2 =StringReplace[dir, "/fort"~~__->""];
 params=ParseFile[dir2];
 t=params[[1]];
-q=params[[2]];
+q=params[[3]];
 Teff=10^t;
 Qg=10^q;
-
 
 o=Opac[dir2<> "/fort.85"];
 atm=ParseAtm[dir<>"/fort.7"];
@@ -484,7 +400,6 @@ keep=Position[\[Tau], x_/;Min[x]<tau0, 1];
 \[Nu]=Extract[\[Nu], keep];
 \[Tau]= Extract[\[Tau], keep];
 \[Chi]=Extract[\[Chi], keep];
-
 
 T=(Transpose[{#, T[[2;;]]}]&/@\[Tau]);
 Tf=Interpolation/@T;
@@ -508,164 +423,12 @@ ne=Table[nef[[i]][tau0], {i, 1, Length[\[Nu]]}];
 \[Epsilon]=\[Kappa]/(\[Kappa]+\[Sigma]);
 
 gb1=Table[{\[Nu][[i]], 2\[Pi] \[Nu][[i]](B[T[[i]]]/.{\[Nu]1->\[Nu][[i]]})   (\[Epsilon][[i]]^(1/2))/(1+\[Epsilon][[i]]^(1/2))}, {i, 1, Length[\[Nu]]}];
-(*peak=Max[gb1[[All, 2]]];*)
-
-(*Manually entered tick marks for plotting the spectrum*)
-(*myticks={{1.`*^14, Style["10^14", FontFamily->Times, FontSize->14]},{2.`*^14, ""},{3.`*^14, ""},{4.`*^14, ""},{5.`*^14,""},{6.`*^14, ""},{7.`*^14, "" },{8.`*^14, ""},{9.`*^14, "" },{1.`*^15, Style["10^15", FontFamily->Times, FontSize->14]},{2.`*^15, ""},{3.`*^15, ""},{4.`*^15,""},{5.`*^15, ""},{6.`*^15, ""},{7.`*^15, "" },{8.`*^15, ""},{9.`*^15, ""},{1.`*^16,Style["10^16", FontFamily->Times, FontSize->14]},{2.`*^16, ""},{3.`*^16, ""},{4.`*^16, ""},{5.`*^16, ""},{6.`*^16, ""},{7.`*^16, ""},{8.`*^16, ""},{9.`*^16, ""}};
-
-(*Actually plotting the spectrum*)
-gp1=ListLogLogPlot[gb1, Joined->True, PlotRange->{xrange, {10^-4  peak, 2 peak}},FrameLabel->{{ "\[Nu] Subscript[F, \[Nu]] [erg cm^-2 s ^-1]", None},{ "\[Nu] [s ^-1]", OutForm[Teff, 2]}}, Frame->True,FrameTicks->{{Automatic, Automatic},{myticks, Automatic}},  PlotStyle->Directive[color], ImageSize->size(*, FrameStyle->Directive[FontFamily->"Times", FontSize->14], FrameTicksStyle->{Directive[FontFamily->"Times", 14],Directive[FontFamily->"Times", 14]}*)
-(*PlotLabel->Style[OutForm[Teff,2]//ToString,FontFamily->"Times", FontSize->14]*)]*)
 
 tlustyspec=PlotF[dir<> "/fort.13", optrange->{0.1 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size, optcol->Red];
 gp1=ListLogLogPlot[gb1, Joined->True];
 Show[tlustyspec, gp1]
-
-
 ]
 
-
-(*Comparison of tlusty spectrum to graybody using opacities that are output by tlusty itself. Differs from above in that user can specify Qg and Teff which don't necessarily correspond to the above tlusty spectrum*)
-(*GraybodyCompare2[dir_?StringQ, Teff_, Qg_, OptionsPattern[]]:=Module[{dir2, o, atm,  dens , \[Chi], \[Chi]all, \[Kappa]all, \[Kappa]r, \[Tau], near, pos, \[Kappa], \[Sigma], ne,\[Epsilon], \[Mu]e, T,\[Nu],z, \[Delta]z, spec, planck, tlustyspec, gb, gp, gb1, gp1, size},
-size=OptionValue[optsize];
-
-dir2 =StringReplace[dir, "/fort"~~__->""];
-o=Opac[dir2<> "/fort.85"];
-atm=ParseAtm[dir<>"/fort.7"];
-
-T=atm[[All,2]];
-ne=atm[[All,3]];
-dens=atm[[All,4]];
-z=atm[[All,5]];
-
-\[Delta]z=z//Differences;
-o=o//Reverse;
-
-\[Chi]=o[[All,2]];
-\[Nu]=o[[All,1]];
-\[Tau]=-#[[2;;]] \[Delta]z dens[[2;;]]&/@\[Chi];
-
-
-
-near=Nearest[#,2/3]&/@\[Tau];
-pos=Table[Position[ \[Tau][[i]], near[[i,1]]], {i, 1, Length[near]}];
-(*Total opacity at the photosphere*)
-(*\[Chi]all=Table[Extract[Transpose[\[Chi]],pos[[i]]], {i, 1, Length[pos]}];*)
-\[Chi]=Table[Extract[\[Chi][[i]],pos[[i]]], {i, 1, Length[\[Chi]]}]//Flatten;
-ne=Table[Extract[ne, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-dens=Table[Extract[dens, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-T=Table[Extract[T, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-\[Mu]e=ne mp/dens;
-\[Sigma]=\[Mu]e 0.4;
-\[Kappa]=\[Chi]-\[Sigma];
-(*\[Kappa]all=\[Chi]all-\[Sigma];*)
-(*\[Kappa]=If[#<0, 0, #]&/@\[Kappa];*)
-
-(*\[Kappa]r=Table[Rosseland[\[Nu], \[Kappa][[i]],T[[i]]], {i, 1, Length[pos]}];*)
-\[Epsilon]=\[Kappa]/(\[Kappa]+\[Sigma]);
-
-
-
-gb1=Table[{\[Nu][[i]], 2\[Pi] \[Nu][[i]](B[T[[i]]]/.{\[Nu]1->\[Nu][[i]]})   (\[Epsilon][[i]]^(1/2))/(1+\[Epsilon][[i]]^(1/2))}, {i, 1, Length[\[Nu]]}];
-tlustyspec=PlotF[dir<> "/fort.13"(*,Green*), optrange->{0.05 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size];
-gp1=ListLogLogPlot[gb1, Joined->True];
-
-Show[{tlustyspec, gp1}]
-(*Manipulate[
-gb=Table[{\[Nu][[i]], 2\[Pi] \[Nu][[i]](B[Tp]/.{\[Nu]1->\[Nu][[i]]})   (\[Epsilon][[i]]^(1/2))/(1+\[Epsilon][[i]]^(1/2))}, {i, 1, Length[\[Nu]]}];
-gp=ListLogLogPlot[gb, PlotRange->{{0.1 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]},All}, Joined->True];
-GraphicsColumn[{Show[{tlustyspec, gp1}],Show[{ tlustyspec, gp}]}]
-, {{Tp, Teff}, Teff/2,2 Teff}
-, TrackedSymbols:>Tp]*)]*)
-
-
-(*Comparison of tlusty spectrum to graybody using opacities that are output by tlusty itself. Differs from above in that user can specify Qg and Teff which don't necessarily correspond to the above tlusty spectrum*)
-(*GraybodyCompare2[dir_?StringQ, Teff_, Qg_, OptionsPattern[]]:=Module[{dir2, o, atm,  dens , \[Chi], \[Chi]all, \[Kappa]all, \[Kappa]r, \[Tau], near, pos, \[Kappa], \[Sigma], ne,\[Epsilon], \[Mu]e, T,\[Nu],z, \[Delta]z, spec, planck, tlustyspec, gb, gp, gb1, gp1, size},
-size=OptionValue[optsize];
-
-dir2 =StringReplace[dir, "/fort"~~__->""];
-o=Opac[dir2<> "/fort.85"];
-atm=ParseAtm[dir<>"/fort.7"];
-
-T=atm[[All,2]];
-ne=atm[[All,3]];
-dens=atm[[All,4]];
-z=atm[[All,5]];
-
-\[Delta]z=z//Differences;
-o=o//Reverse;
-
-\[Chi]=o[[All,2]];
-\[Nu]=o[[All,1]];
-\[Tau]=-#[[2;;]] \[Delta]z dens[[2;;]]&/@\[Chi];
-
-
-
-
-
-near=Nearest[#,2/3]&/@\[Tau];
-pos=Table[Position[ \[Tau][[i]], near[[i,1]]], {i, 1, Length[near]}];
-(*Total opacity at the photosphere*)
-(*\[Chi]all=Table[Extract[Transpose[\[Chi]],pos[[i]]], {i, 1, Length[pos]}];*)
-\[Chi]=Table[Extract[\[Chi][[i]],pos[[i]]], {i, 1, Length[\[Chi]]}]//Flatten;
-ne=Table[Extract[ne, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-dens=Table[Extract[dens, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-T=Table[Extract[T, pos[[i]]], {i, 1, Length[pos]}]//Flatten;
-\[Mu]e=ne mp/dens;
-\[Sigma]=\[Mu]e 0.4;
-\[Kappa]=\[Chi]-\[Sigma];
-(*\[Kappa]all=\[Chi]all-\[Sigma];*)
-(*\[Kappa]=If[#<0, 0, #]&/@\[Kappa];*)
-
-(*\[Kappa]r=Table[Rosseland[\[Nu], \[Kappa][[i]],T[[i]]], {i, 1, Length[pos]}];*)
-\[Epsilon]=\[Kappa]/(\[Kappa]+\[Sigma]);
-
-
-
-gb1=Table[{\[Nu][[i]], 2\[Pi] \[Nu][[i]](B[T[[i]]]/.{\[Nu]1->\[Nu][[i]]})   (\[Epsilon][[i]]^(1/2))/(1+\[Epsilon][[i]]^(1/2))}, {i, 1, Length[\[Nu]]}];
-tlustyspec=PlotF[dir<> "/fort.13"(*,Green*), optrange->{0.05 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size];
-gp1=ListLogLogPlot[gb1, Joined->True];
-
-Show[{tlustyspec, gp1}]
-(*Manipulate[
-gb=Table[{\[Nu][[i]], 2\[Pi] \[Nu][[i]](B[Tp]/.{\[Nu]1->\[Nu][[i]]})   (\[Epsilon][[i]]^(1/2))/(1+\[Epsilon][[i]]^(1/2))}, {i, 1, Length[\[Nu]]}];
-gp=ListLogLogPlot[gb, PlotRange->{{0.1 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]},All}, Joined->True];
-GraphicsColumn[{Show[{tlustyspec, gp1}],Show[{ tlustyspec, gp}]}]
-, {{Tp, Teff}, Teff/2,2 Teff}
-, TrackedSymbols:>Tp]*)]
-
-(*Function which given the frequency for an edge identifies a candidate ion based on table of photoionization energies above*)
-Options[Edge]={metals->False}
-Edge[\[Nu]_, OptionsPattern[]]:=Module[{en, pos,close, ion,m, ions2},
-m=OptionValue[metals];
-If[m, ions2=ions, ions2=ionshhe];
-(*Calculate energy in cgs units*)
-en=h \[Nu];
-close=Nearest[ions2[[All,2]], en][[1]];
-pos=Position[ions2[[All, 2]],x_/; Abs[x-close]/close<10^-6];
-ion=Extract[ions2, pos]//Flatten;
-{ion[[1]], ion[[2]]/h}
-
-]
-(*Approximate color corrected blackbody based in part on the prescription in: 2012MNRAS .420.1848D*)
-Options[ColCorrected]={optsize->Medium}
-ColCorrected[dir_?StringQ, OptionsPattern[]]:=Module[{dir2, params, Teff, Qg, t, q, tlustyspec,fcol, bb, size},
-size=OptionValue[optsize];
-
-dir2 =StringReplace[dir, "/fort"~~__->""];
-params=ParseFile[dir2];
-t=params[[1]];
-q=params[[2]];
-Teff=10^t;
-Qg=10^q;
-fcol=If[Teff>=10^5,(72 *keV/(kb*Teff))^(1/9), (Teff/(3 10^4))^0.82];
-
-tlustyspec=PlotF[dir2<> "/fort.13"(*,Green*),optrange-> {0.05 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size];
-
-bb=LogLogPlot[{ \[Pi] \[Nu]1 B[Teff, fcol]}, {\[Nu]1, 0.05 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}];
-Show[tlustyspec, bb]
-
-]*)
 (*Approximate color corrected blackbody based in part on the prescription in: 2012MNRAS .420.1848D*)
 Options[ColCorrected]={optsize->Large}
 ColCorrected[dir_?StringQ, OptionsPattern[]]:=Module[{dir2, params, Teff, Qg, t, q, tlustyspec,fcol, bb, size},
@@ -674,19 +437,19 @@ size=OptionValue[optsize];
 dir2 =StringReplace[dir, "/fort"~~__->""];
 params=ParseFile[dir2];
 t=params[[1]];
-q=params[[2]];
+q=params[[3]];
 Teff=10^t;
 Qg=10^q;
 fcol=If[Teff>=10^5,(72 *keV/(kb*Teff))^(1/9), (Teff/(3 10^4))^0.82];
 
-tlustyspec=PlotF[dir2<> "/fort.13"(*,Green*),optrange-> {0.05 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size];
+tlustyspec=PlotF[dir2<> "/fort.13",optrange-> {0.05 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}, optsize->size];
 
 bb=LogLogPlot[{ \[Pi] \[Nu]1 B[Teff, fcol]}, {\[Nu]1, 0.05 \[Nu]peak[Teff], 10 \[Nu]peak[Teff]}];
 Show[tlustyspec, bb]
 
 ]
 
-Options[GraybodyCompare3]={ optsize->Large}
+(*Options[GraybodyCompare3]={ optsize->Large}
 GraybodyCompare3[dir_?StringQ, OptionsPattern[]]:=
 Module[{dir2, Tp, \[Epsilon], bb, gb, bp, tlustyspec, gp,params, t, q, m, Teff, Qg, Dmtot, size}, 
 size=OptionValue[optsize];
@@ -695,14 +458,13 @@ size=OptionValue[optsize];
 dir2=StringReplace[dir, "/fort"~~__->""];
 params=ParseFile[dir2];
 t=params[[1]];
-q=params[[2]];
-m=params[[3]];
+m=params[[2]];
+q=params[[3]];
+
 Teff=10^t;
 Qg=10^q;
 Dmtot=10^m;
 
-(*Teff=10^4;
-Qg=5.01 10^-13;*)
 gb=Graybody3[Teff, Qg, Dmtot];
 
 
@@ -714,10 +476,7 @@ tlustyspec=PlotF[dir2<> "/fort.13"(*,Green*),optrange-> {0.1\[Nu]peak[Teff], 10 
 
 Show[tlustyspec, bp, gp]
 
-]
-	
-
-
+]*)
 
 
 
