@@ -71,19 +71,21 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
         m='{0:.3g}'.format(log_dmtot*10)
         q='{0:.3g}'.format(log_qgrav*10)
 
-        print t
+        #print t
         #Create a folder in which to store the tlusty output in 
         loc='t' + t + 'm' + m + 'q' + q
         bash_command('mkdir -p ' + loc)
 
         #If the location of the input model is not blank then copy model atmosphere to the current directory
-        if model:
-            #print "test"           
+        if model:    
+            #Check if unit 7 file is present in the specified in location.      
             process=bash_command('check ' + model + '/fort.7')
+            #If it is not found then return empty string as flag
             if len(process.stdout.readlines())==0:
                 loc=''
                 return loc
             bash_command('cp ' + model + '/fort.7 ' + './fort.8')
+            bash_command('cat '+ model + '/fort.9_old ' + model + '/fort.9 > fort.9_old' )
             if copy:
                 bash_command('cp ' + model + '/tmp.flag ' + './')
         #Return name of directory setup made   
@@ -101,8 +103,7 @@ def reltot(file='fort.9'):
 
     niter= dat[-1, 0]
     dat_cut=dat[(dat[:,0]==niter)]
-
-
+    #Check for non-numeric values in the convergence log
     try:
          change=dat_cut[:, 2:7]
          change=np.array(map(np.abs, change))
