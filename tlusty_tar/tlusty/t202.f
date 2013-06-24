@@ -13700,6 +13700,9 @@ C
          end if
    70 CONTINUE
       write(110, *) ptint/ZD(1)
+      if(hmix0.ge.0) then
+         call CONOUT(1,1)
+      endif
       if(idisk.eq.1) then
          if(pgint.gt.0.) alpgav=omeg32*wbar/pgint*dm(nd)
          if(ptint.gt.0.) alptav=omeg32*wbar/ptint*dm(nd)
