@@ -32,7 +32,7 @@ def bash_command(cmd):
 
 
 ##Setup input file for tlusty
-def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail'):
+def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail', value=''):
         lte='T'
         if(nlte):
             lte='F'
@@ -88,14 +88,20 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
             bash_command('cat '+ model + '/fort.9_old ' + model + '/fort.9 > fort.9_old' )
             if copy:
                 bash_command('cp ' + model + '/tmp.flag ' + './')
+
+        f=open('tmp.flag', 'a')
+        if value:
+            f.write(value+ '\n')
         #Return name of directory setup made   
         return loc
+
 
 
 ##Run TLUSTY from the bash shell
 def run():
     cmd="./t202 <fort.5 >fort.6"
     bash_command(cmd)
+
 
 ##Gets nominal convergence from the convergence log file in tlusty
 def reltot(file='fort.9'):
@@ -163,12 +169,12 @@ def clean(outdir,maxchange,nlte, remove=False):
 
 
 ##Run tlusty based on command line input parameters
-def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail', remove=False):
+def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
     log_teff=params[0]
     log_dmtot=params[1]
     log_qgrav=params[2]
 
-    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
     if not outdir:
         return
     run()
@@ -182,7 +188,7 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
     #If we would like to calculate a combination on lte and nlte atmospheres
     if combo:
         nlte=True
-        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname,value)
         if not outdir: 
             return
         run()
@@ -193,7 +199,7 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
 
 
 ##Run tlusty based on parameters found at the location of model
-def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False):
+def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value=''):
     process=bash_command('check ' + model + '/fort.5')
     if len(process.stdout.readlines())==0:
         return
@@ -204,8 +210,7 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=Fals
     log_dmtot=np.log10(params[0][3])
     #print log_teff,log_dmtot
 
-
-    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
     if not outdir:
         return
 
@@ -213,12 +218,12 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=Fals
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
     clean(outdir,maxchange,nlte, remove)
-    #return maxchange
+    return maxchange
 
 
 
 ##Construct tlusty model based on info in myfile
-def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False):
+def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
@@ -235,12 +240,11 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
 
         if ncols>3:
             model=params[i][3]
-
         if combo:
             nlte=False    
 
         #set up input files, then run tlusty, finally check for nominal convergence and move all output files to 
-        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
         if not outdir:
             continue
         run()
@@ -263,7 +267,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
 
 
 
-   # return maxchange
+
 
 
 ##Driver; parse user input
@@ -296,6 +300,9 @@ def main():
         help='Stores required parameters for atmosphere. Need 3 positional arguments in the order teff, dmtot, qgrav',
         nargs=3,
         type=float)
+    parser.add_argument('-val', '--value',
+        help='Sets param value to be value in optional parameters file',
+        default='')
     args=parser.parse_args()
 
     #Extract user inputted parameters
@@ -307,13 +314,15 @@ def main():
     combo=args.combo
     tailname=args.tail
     remove=args.remove
+    value=args.value
+
 
     if params:
-        tlusty_runs_input(params, model, nlte, copy, combo, tailname, remove)
+        tlusty_runs_input(params, model, nlte, copy, combo, tailname, remove, value)
     elif  model:
-        tlusty_runs_model(model, nlte, copy, tailname, remove)
+        tlusty_runs_model(model, nlte, copy, tailname, remove, value)
     else:
-        tlusty_runs_file(myfile, nlte, copy, combo, tailname, remove)
+        tlusty_runs_file(myfile, nlte, copy, combo, tailname, remove, value)
 
 
 if __name__ == '__main__':
