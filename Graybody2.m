@@ -25,7 +25,8 @@ Needs["PlotLegends`"]
 Needs["CustomTicks`"]
 
 
-K\[Nu]=Solve[y^2 (1+y)==(x)^2 f, y]//StandardForm
+
+
 (*Physical constants in cgs units*)
 G=6.67 10^-8;  (*Newton's constant in cgs*)
 c=3 10^10 ; (*Speed of light in cgs*)
@@ -43,14 +44,15 @@ eV=1.6 10^-12;
 keV=10^3 eV;
 R=13.6 eV;
 K=2.815 10^29;
+
+
+
 nmax=8;
 (*Table of ionization energies for various species*)
 ions={{"H11",2.1785304`*^-11},{"H12",5.446326`*^-12},{"H13",2.4205893`*^-12},{"H14",1.3615815`*^-12},{"H15",1,8.7141216`*^-13},{"H16",6.0514734`*^-13},{"H17",4.4459804`*^-13},{"H18",3.4039538`*^-13},{"He1",3.9389425`*^-11},{"He21",8.7176979`*^-11},{"He22",2.1794245`*^-11},{"He23",2,9.686331`*^-12},{"He24",2,5.4485612`*^-12},{"c1",1.8042644`*^-11},{"c2",3.9063653`*^-11},{"c3",7.6719252`*^-11},{"c4",1.0331629`*^-10},{"c5",6.2816386`*^-10},{"c6",7.8427095`*^-10},{"n1",2.3296135`*^-11},{"n2",4.7423235`*^-11},{"n3",7.6016697`*^-11},{"n4",1.2411747`*^-10},{"n5",1.5682464`*^-10},{"n6",8.844911`*^-10},{"n7",1.0674799`*^-9},{"o1",2.1812346`*^-11},{"o2",5.6260111`*^-11},{"o3",8.8010408`*^-11},{"o4",1.2402172`*^-10},{"o5",1.8247366`*^-10},{"o6",2.2124336`*^-10},{"o7",1.1843989`*^-9},{"o8",1.3942595`*^-9},{"ne1",3.6128602`*^-11},{"ne2",6.8628627`*^-11},{"ne3",1.0631106`*^-10},{"ne4",1.6270685`*^-10},{"ne5",2.1145801`*^-10},{"ne6",2.6459267`*^-10},{"ne7",3.472636`*^-10},{"ne8",4.0057914`*^-10},{"ne9",2.0034556`*^-9},{"ne10",2.1785304`*^-9},{"mg1",1.2810266`*^-11},{"mg2",2.5189736`*^-11},{"mg3",1.3427176`*^-10},{"mg4",1.830216`*^-10},{"mg5",2.3667571`*^-10},{"mg6",3.1247191`*^-10},{"mg7",3.7686545`*^-10},{"mg8",4.4549541`*^-10},{"mg9",5.4945902`*^-10},{"mg10",6.1576339`*^-10},{"mg11",2.9517446`*^-9},{"mg12",3.1370838`*^-9},{"si1",1.3059588`*^-11},{"si2",2.6187021`*^-11},{"si3",5.3657819`*^-11},{"si4",7.2319749`*^-11},{"si5",2.6717798`*^-10},{"si6",3.2851514`*^-10},{"si7",3.9495665`*^-10},{"si8",4.8571081`*^-10},{"si9",5.6250151`*^-10},{"si10",6.4312579`*^-10},{"si11",7.6269932`*^-10},{"si12",8.3869495`*^-10},{"si13",3.9054135`*^-9},{"si14",4.2699196`*^-9},{"s1",1.7356621`*^-11},{"s2",3.9092763`*^-11},{"s3",5.8348346`*^-11},{"s4",7.925344`*^-11},{"s5",1.2176528`*^-10},{"s6",1.4751898`*^-10},{"s7",4.7067136`*^-10},{"s8",5.4991619`*^-10},{"s9",6.3514327`*^-10},{"s10",7.4905721`*^-10},{"s11",8.4571146`*^-10},{"s12",9.4601642`*^-10},{"s13",1.0917531`*^-9},{"s14",1.18475`*^-9},{"s15",5.4012554`*^-9},{"s16",5.5770378`*^-9},{"ar1",2.6403215`*^-11},{"ar2",4.6289821`*^-11},{"ar3",6.8256269`*^-11},{"ar4",1.0020359`*^-10},{"ar5",1.2569094`*^-10},{"ar6",1.5247427`*^-10},{"ar7",2.0828634`*^-10},{"ar8",2.4034762`*^-10},{"ar9",7.0775984`*^-10},{"ar10",8.019825`*^-10},{"ar11",9.0295664`*^-10},{"ar12",1.0358132`*^-9},{"ar13",1.1494753`*^-9},{"ar14",1.2661522`*^-9},{"ar15",1.4320572`*^-9},{"ar16",1.5380403`*^-9},{"ar17",6.9040077`*^-9},{"ar18",7.0584385`*^-9},{"ca1",1.0241786`*^-11},{"ca2",1.9889521`*^-11},{"ca3",8.5297974`*^-11},{"ca4",1.1270874`*^-10},{"ca5",1.4158178`*^-10},{"ca6",1.8225303`*^-10},{"ca7",2.1312037`*^-10},{"ca8",2.4668765`*^-10},{"ca9",3.158662`*^-10},{"ca10",3.539634`*^-10},{"ca11",9.9165355`*^-10},{"ca12",1.1011217`*^-9},{"ca13",1.2174407`*^-9},{"ca14",1.3699091`*^-9},{"ca15",1.4986975`*^-9},{"ca16",1.6326737`*^-9},{"ca17",1.8216955`*^-9},{"ca18",1.9396842`*^-9},{"ca19",8.5925419`*^-9},{"ca20",8.7141216`*^-9},{"fe1",1.3239406`*^-11},{"fe2",2.7120436`*^-11},{"fe3",5.1352375`*^-11},{"fe4",9.1812264`*^-11},{"fe5",1.2567041`*^-10},{"fe6",1.6596797`*^-10},{"fe7",2.0938089`*^-10},{"fe8",2.5308136`*^-10},{"fe9",3.9134305`*^-10},{"fe10",4.3911893`*^-10},{"fe11",4.8627134`*^-10},{"fe12",5.54195`*^-10},{"fe13",6.0487885`*^-10},{"fe14",6.5701636`*^-10},{"fe15",7.6565434`*^-10},{"fe16",8.1983187`*^-10},{"fe17",2.1145801`*^-9},{"fe18",2.281797`*^-9},{"fe19",2.4614767`*^-9},{"fe20",2.6396987`*^-9},{"fe21",2.8291378`*^-9},{"fe22",3.0140053`*^-9},{"fe23",3.2813417`*^-9},{"fe24",3.4273699`*^-9},{"fe25",1.4790261`*^-8},{"fe26",1.4726866`*^-8}};
 
 ionshhe={{"H11",2.1785304`*^-11},{"H12",5.446326`*^-12},{"H13",2.4205893`*^-12},{"H14",1.3615815`*^-12},{"H15",1,8.7141216`*^-13},{"H16",6.0514734`*^-13},{"H17",4.4459804`*^-13},{"H18",3.4039538`*^-13},{"He1",3.9389425`*^-11},{"He21",8.7176979`*^-11},{"He22",2.1794245`*^-11},{"He23",2,9.686331`*^-12},{"He24",2,5.4485612`*^-12}}
-
-mydir="/home/aleksey/First_Year_Project/tlusty_tar/examples/aleksey_tlusty_runs"
-
+(*mydir="/home/aleksey/First_Year_Project/tlusty_tar/examples/aleksey_tlusty_runs"*)
 Options[Edge]={metals->False}
 Edge[\[Nu]_, OptionsPattern[]]:=Module[{en, pos,close, ion,m, ions2},
 m=OptionValue[metals];
@@ -64,58 +66,19 @@ ion=Extract[ions2, pos]//Flatten;
 
 ]
 
-ColGrad[n_, grad_:"Rainbow"]:=Module[{colorfunc, colors, colorscale},
-colorscale=Range[0, 1, 1/(n-1)];
-colorfunc=ColorData[grad][#]&;
-colors=colorfunc/@colorscale
-]
+
+
 
 B[Teff_, fcol_:1]:=1/fcol^4 (2 h \[Nu]1^3/c^2)/(E^((h \[Nu]1)/( kb  fcol Teff))-1)
 B2[Teff_, \[Xi]_]:=(kb Teff)^3/(h c)^2 (2\[Xi]^3)/(E^\[Xi]-1)
 \[Nu]peak[Teff_]:=2.82 kb Teff/h
 
 
-u[n_, T_]:=(R)(1/n^2-1)/(kb T)
-g[n_]:=2 n^2
-nstar[\[Nu]_]:=(R/(h \[Nu]))^(1/2)//Ceiling
-\[Alpha][\[Nu]_, T_]:=Sum[K/(n^5 \[Nu]^3) g[n] E^(u[n, T]-u[1, T]), {n,nstar[\[Nu]], nmax}]
-(*Saha equation*)
-fh[n_, T_]:=(1/n ((2\[Pi] me kb T)/h^2)^(3/2) E^(-R/(kb T))+1)^-1
-
-Graybody3[T_, Q_, Dmtot_]:=Module[{\[Rho], H, \[Kappa]es, n, n2, \[Kappa], \[Kappa]r, \[Kappa]\[Nu], \[Nu]}, 
-\[Kappa]es=0.4;
-H=0.4/c \[Sigma] T^4/Q;
-\[Rho]=Dmtot/H;
-n=\[Rho] /mp;
-n2=fh[ n, T]/mp;
-\[Nu]=Range[Log[10,0.1\[Nu]peak[T]],Log[10, 10 \[Nu]peak[T]], 0.02];
-\[Nu]=10^\[Nu];
-\[Kappa]=n2 \[Alpha][#, T]&/@\[Nu];
-\[Kappa]\[Nu]=Transpose[{\[Nu], \[Kappa]}];
-\[Kappa]\[Nu]=DeleteCases[\[Kappa]\[Nu], x_/;x[[2]]==0];
 
 
-\[Kappa]r= Rosseland[\[Kappa]\[Nu][[All, 1]], \[Kappa]\[Nu][[All, 2]], T];
 
-Transpose[{\[Nu], \[Nu] Sqrt[\[Kappa] (\[Kappa]+\[Kappa]es)]/(\[Kappa]r+\[Kappa]es) (B[T]/.\[Nu]1->\[Nu])}]
-(*\[Kappa]=With[{nc=n2},Function[\[Nu], nc (\[Alpha][\[Nu], T])]
-];
-\[Kappa]r=\[Kappa]ross[\[Kappa], T];
-With[{\[Kappa]c=\[Kappa], \[Kappa]rc=\[Kappa]r},Function[\[Nu], Sqrt[\[Kappa]c[\[Nu]](\[Kappa]c[\[Nu]]+0.4)]/(\[Kappa]rc+0.4)]]*)
 
-]
-Rosseland[\[Nu]_, \[Kappa]_, T_]:=Module[{\[Delta]\[Nu], dB\[Nu]dT, int, \[Kappa]2},
-dB\[Nu]dT=(B'[T]/.\[Nu]1->\[Nu])[[2;;]];
-
-\[Kappa]2=\[Kappa][[2;;]];
-\[Delta]\[Nu]=\[Nu]//Differences;
-(*Calculating the integral in Rosseland mean opacity by right hand summation*)
-
-int=(1/\[Kappa]2)dB\[Nu]dT \[Delta]\[Nu]//Total;
-int= int/(4 \[Sigma] T^3/\[Pi]);
-int=1/int
-]
-
+K\[Nu]=Solve[y^2 (1+y)==(x)^2 f, y]//StandardForm
 (*Calculates graybody atmosphere using Taka's formalism for a particular Teff and gravity parameter. Free is a flag to switch between the free-free and bound-free opacities*)
 Graybody[Teff_, Qg_, Free_:False, prec_:10^-8]:=Module[{\[Kappa]es, \[Kappa]s, \[Kappa]sb, \[Kappa]sf, \[Epsilon]s,  \[Xi], f, x  , K, K\[Nu], \[Epsilon], Tp, \[CapitalXi], \[Rho]p, pr, pg, r, error, flux1, flux2},
 \[Kappa]es=0.4;
@@ -170,7 +133,7 @@ If[error>prec, Print["Warning! Error in flux has exceeded the specified threshol
 {pr/pg, Tp, \[Epsilon], ((\[CapitalXi] Tp^4/.r)-Teff^4)/Teff^4}
 ]
 
-(*Function takes list of annuli parameters and outputs a list of the total disk flux*)
+(*Function takes list of annuli parameters and outputs a list of the total disk flux. dr and r sould be the 1st 2 args, followed by Teff, then the surface density, and finally qgrav*)
 GraybodyDiskFlux[params_]:=Module[{\[Epsilon],Tp,\[Nu]lo, \[Nu]hi, \[Nu]pts, tq, gb}, tq=dat[[All, {3,5}]];
 tq=params[[All, {3,5}]];
 \[Epsilon]=Map[Graybody[#[[1]],#[[2]]]&,10^tq];
@@ -188,6 +151,13 @@ gb=gb//Chop;
 Transpose[{10^\[Nu]pts, 2*\[Pi]*params[[All,1]]*params[[All,2]]*gb//Total}]
 ]
 
+
+
+ColGrad[n_, grad_:"Rainbow"]:=Module[{colorfunc, colors, colorscale},
+colorscale=Range[0, 1, 1/(n-1)];
+colorfunc=ColorData[grad][#]&;
+colors=colorfunc/@colorscale
+]
 (*Plots spectrum from unit 14 output file; this files is only produced when comptonization is turned on in tlusty*)
 PlotSpec[ dir_, color_:Black,xrange_:{}, nmu_:10, mu_:1]:=Module[{dir2, dat, int, \[Lambda], \[Nu], \[Lambda]h, \[Nu]h, \[Nu]peak, imu, peak, prange},
 dir2=StringReplace[dir, "/fort"~~__->""];
@@ -214,6 +184,20 @@ RowBox[{\"-\", \"2\"}]]\) \!\(\*SuperscriptBox[\"s\",
 RowBox[{\"-\", \"1\"}]]\)]"},  Joined->True, PlotStyle->Directive[color], PlotRange->{prange, {10^-6 peak , peak}}, PlotRangeClipping->False, ImageSize->Large]
 ]
 
+(*Parses a model atmosphere from a unit 7 input file; recently added an extra column for ionized hydrogen.*)
+ParseAtm[dir_]:=Module[{dir2, atm, m,nd, blocks},
+dir2=StringReplace[dir, "/fort"~~__->""];
+atm=Import[dir2<>"/fort.7", "Table"]//Flatten;
+(*atm=ReadList[dir<>"/fort.7", Number];*)
+nd=atm[[1]];
+blocks=atm[[2]];
+atm=atm[[3;;]];
+m=atm[[1;;nd]];
+atm=atm[[nd+1;;]];
+atm=Partition[atm, blocks][[All, {1,2, 3, 4, 14, 20}]];
+atm=Flatten/@Transpose[{m, atm}]
+]
+
 (*Parses the opacity output from tlusty*)
 Opac[ dir_, nd_:70]:=Module[{dir2,\[Kappa], \[Nu], dat},
 dir2=StringReplace[dir, "/fort"~~__->""];
@@ -226,25 +210,33 @@ Table[{\[Nu][[i]], \[Kappa][[i]]}, {i, 1, Length[\[Nu]]}]
 
 ]
 
-(*Parses a model atmosphere from a unit 7 input file*)
-ParseAtm[dir_]:=Module[{dir2, atm, m,nd, blocks},
-dir2=StringReplace[dir, "/fort"~~__->""];
-atm=Import[dir2<>"/fort.7", "Table"]//Flatten;
-(*atm=ReadList[dir<>"/fort.7", Number];*)
-nd=atm[[1]];
-blocks=atm[[2]];
-atm=atm[[3;;]];
-m=atm[[1;;nd]];
-atm=atm[[nd+1;;]];
-atm=Partition[atm, blocks][[All, 1;;4]];
-atm=Flatten/@Transpose[{m, atm}]
 
+
+(*Checks for density inversion*)
+InvCheck[dir_]:=Module[{ atm, badlen},
+atm=ParseAtm[dir];
+badlen=Cases[atm[[All, 4]]//Differences, x_/;x<0]//Length;
+If[badlen>0, True, False]
 ]
+(*Secondary inversion check function to extract more information about magnitude of density inversion and its position*)
+InvCheck2[dir_]:=Module[{ atm, badlen, pos, diff, diff2, dens},
+atm=ParseAtm[dir];
+dens=atm[[All, 4]];
+diff=dens//Differences;
+diff2=diff/dens[[;;-2]];
+pos=Position[diff2, x_/;x<0];
+
+diff2=Extract[diff2, pos];
+{pos, diff2}
+]
+
+
+
 
 (*Plots convergence files outputted by tlusty*)
 PConv[dir_]:=Module[{dir2, ConvData, maxchange, maxchange2, iter, colorscale, color, colors, params, t, q, Teff, Qg},
 dir2=StringReplace[dir, "/fort"~~__->""];
-params=StringCases[dir2, RegularExpression["t[\-0-9]*m[\-0-9]*q[\-0-9]*"]];
+params=StringCases[dir2, RegularExpression["t[\-0-9.]*m[\-0-9.]*q[\-0-9.]*"]];
 ConvData=Import[dir2<>"/fort.9", "Table", "HeaderLines"->3]//SplitBy[#, First]&;
 ConvData=Reverse/@ConvData;
 
@@ -256,9 +248,8 @@ If[iter>1,colorscale=Range[0, 1, 1/(iter-1)], colorscale={1}];
 color=ColorData["Rainbow"][#]&;
 colors=color/@colorscale;
 GraphicsGrid[{{ListLogPlot[maxchange, Joined->True, Frame->True,FrameLabel->params, PlotStyle->colors, ImageSize->Medium],
-ListLogPlot[maxchange2, Joined->True, Frame->True]}}]
+ListLogPlot[maxchange2, Joined->True, Frame->True, PlotRange->{Automatic, {10^-4, 100}}]}}]
 ]
-
 (*Plot tlusty output for flux from TLUSTY unit 13 file*)
 Options[PlotF]={optcol->Green, optrange->{10^14, 10^17}, optsize->Large}
 PlotF[dir_?StringQ, OptionsPattern[]]:=Module[
@@ -298,7 +289,6 @@ RowBox[{\"-\", \"1\"}]]\)]", None},{ "\[Nu] [\!\(\*SuperscriptBox[\"s\",
 RowBox[{\"-\", \"1\"}]]\)]", None}}, Frame->True,FrameTicks->{{Automatic, Automatic},{myticks, myticks2}},  PlotStyle->Directive[color], ImageSize->size]
 
 ]
-
 (*User can also pass list of directories to PlotF ot easily plot multiple spectra. This function then call the PlotF function above for each of the directories*)
 PlotF[dir_?ListQ, OptionsPattern[]]:=Module[{color, xrange, lc, lr, params,dir2, spectra, spectra2, reorder,size, speclegend, line}, 
 color=OptionValue[optcol];
@@ -327,22 +317,33 @@ spectra2=spectra[[params[[All, 1]]//Ordering//Reverse]];
 GraphicsRow[{Show[spectra2], speclegend}]
 ]
 
+
+
 (*Parses file name to infer parameters associated with the model, differs from the above function only in t*)
 ParseFile[file_]:=Module[{s, m,t, q, sm, st, sq},
-s=StringCases[file, RegularExpression["t[\-0-9]*m[\-0-9]*q[\-0-9]*"]];
-st=StringCases[s, RegularExpression["t[\-0-9]*"]]//Flatten;
+s=StringCases[file, RegularExpression["t[\-0-9.]*m[\-0-9.]*q[\-0-9.]*"]];
+st=StringCases[s, RegularExpression["t[\-0-9.]*"]]//Flatten;
 t=StringCases[st, "t"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# (1/10))&;
-sm=StringCases[s, RegularExpression["m[\-0-9]*"]]//Flatten;
+sm=StringCases[s, RegularExpression["m[\-0-9.]*"]]//Flatten;
 m=StringCases[sm, "m"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# (1/10))&;
-sq=StringCases[s, RegularExpression["q[\-0-9]*"]]//Flatten;
+sq=StringCases[s, RegularExpression["q[\-0-9.]*"]]//Flatten;
 q=StringCases[sq, "q"~~x__->x]//Flatten//#[[1]]&//ToExpression//(# (1/10))&;
 {t, m, q}
 ]
 
 (*Function which gives model for a given set of parameters, with the assumed format corresponding to the output form from ParseFile*)
-ReverseParse[params_?ListQ]:=Module[{},
-"t"<>(params[[1]]*10//ToString)<>"m"<>(params[[2]]*10//ToString)<>"q"<>(params[[3]]*10//ToString)<>"/converged"
+ReverseParse[params_?ListQ]:=Module[{ts, tq, tm},
+ts=params[[1]]*10;
+If[FractionalPart[ts]==0, ts=IntegerPart[ts]];
+tm=params[[2]]*10;
+If[FractionalPart[tm]==0, tm=IntegerPart[tm]];
+tq=params[[3]]*10;
+If[FractionalPart[tq]==0, tq=IntegerPart[tq]];
+
+"t"<>(ts//ToString)<>"m"<>(tm//ToString)<>"q"<>(tq//ToString)(*<>"/converged"*)
 ]
+
+
 
 (*Compare tlusty unit 13 file to graybody output*)
 Options[GraybodyCompare]={ optsize->Large}
@@ -368,7 +369,6 @@ gp=LogLogPlot[{bb \[Nu]1, gb \[Nu]1}, {\[Nu]1, 0.1 \[Nu]peak[Teff], 10\[Nu]peak[
 Show[{tlustyspec, gp}]
 
 ]
-
 (*Secondary graybody comparison function where extinction probability is evaluated using the opacity is outputted from TLUSTY itself. *)
 Options[GraybodyCompare2]={optsize->Large}
 GraybodyCompare2[dir_?StringQ, OptionsPattern[]]:=Module[{dir2, o, atm,  dens , \[Chi], \[Chi]all, \[Kappa]all, \[Kappa]r, \[Tau], near, pos, \[Kappa], \[Sigma], ne,\[Epsilon], \[Mu]e, T,\[Nu],z, nef, Tf, \[Chi]f, densf, m, tau0, keep, \[Delta]z, spec, planck, tlustyspec, gb, gp, gb1, gp1, params, t, q, Teff, Qg, size},
@@ -428,6 +428,49 @@ tlustyspec=PlotF[dir<> "/fort.13", optrange->{0.1 \[Nu]peak[Teff], 10 \[Nu]peak[
 gp1=ListLogLogPlot[gb1, Joined->True];
 Show[tlustyspec, gp1]
 ]
+u[n_, T_]:=(R)(1/n^2-1)/(kb T)
+g[n_]:=2 n^2
+nstar[\[Nu]_]:=(R/(h \[Nu]))^(1/2)//Ceiling
+\[Alpha][\[Nu]_, T_]:=Sum[K/(n^5 \[Nu]^3) g[n] E^(u[n, T]-u[1, T]), {n,nstar[\[Nu]], nmax}]
+(*Saha equation*)
+fh[n_, T_]:=(1/n ((2\[Pi] me kb T)/h^2)^(3/2) E^(-R/(kb T))+1)^-1
+Rosseland[\[Nu]_, \[Kappa]_, T_]:=Module[{\[Delta]\[Nu], dB\[Nu]dT, int, \[Kappa]2},
+dB\[Nu]dT=(B'[T]/.\[Nu]1->\[Nu])[[2;;]];
+
+\[Kappa]2=\[Kappa][[2;;]];
+\[Delta]\[Nu]=\[Nu]//Differences;
+(*Calculating the integral in Rosseland mean opacity by right hand summation*)
+
+int=(1/\[Kappa]2)dB\[Nu]dT \[Delta]\[Nu]//Total;
+int= int/(4 \[Sigma] T^3/\[Pi]);
+int=1/int
+]
+Graybody3[T_, Q_, Dmtot_]:=Module[{\[Rho], H, \[Kappa]es, n, n2, \[Kappa], \[Kappa]r, \[Kappa]\[Nu], \[Nu]}, 
+\[Kappa]es=0.4;
+H=0.4/c \[Sigma] T^4/Q;
+\[Rho]=Dmtot/H;
+n=\[Rho] /mp;
+n2=fh[ n, T]/mp;
+\[Nu]=Range[Log[10,0.1\[Nu]peak[T]],Log[10, 10 \[Nu]peak[T]], 0.02];
+\[Nu]=10^\[Nu];
+\[Kappa]=n2 \[Alpha][#, T]&/@\[Nu];
+\[Kappa]\[Nu]=Transpose[{\[Nu], \[Kappa]}];
+\[Kappa]\[Nu]=DeleteCases[\[Kappa]\[Nu], x_/;x[[2]]==0];
+
+
+\[Kappa]r= Rosseland[\[Kappa]\[Nu][[All, 1]], \[Kappa]\[Nu][[All, 2]], T];
+
+Transpose[{\[Nu], \[Nu] Sqrt[\[Kappa] (\[Kappa]+\[Kappa]es)]/(\[Kappa]r+\[Kappa]es) (B[T]/.\[Nu]1->\[Nu])}]
+(*\[Kappa]=With[{nc=n2},Function[\[Nu], nc (\[Alpha][\[Nu], T])]
+];
+\[Kappa]r=\[Kappa]ross[\[Kappa], T];
+With[{\[Kappa]c=\[Kappa], \[Kappa]rc=\[Kappa]r},Function[\[Nu], Sqrt[\[Kappa]c[\[Nu]](\[Kappa]c[\[Nu]]+0.4)]/(\[Kappa]rc+0.4)]]*)
+
+]
+
+
+
+
 
 (*Approximate color corrected blackbody based in part on the prescription in: 2012MNRAS .420.1848D*)
 Options[ColCorrected]={optsize->Large}
