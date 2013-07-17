@@ -125,6 +125,7 @@ def construct_table(models):
     models=np.genfromtxt(models, dtype='string')
     params=map(parse_file,models)
     params=np.array(params)
+    params=params[:, ::2]
     
     spec=map(get_spec, models)
     spec=np.array(spec)
@@ -171,11 +172,16 @@ def sum_spec(r, specs, Teff):
 def test_spec(f, table=[], tablef='tmpd'):
     if table==[]:
         table=construct_table(tablef)
+    print table[0]
     testspec=get_spec(f)
     testspec=regrid(testspec)
     
     params=parse_file(f)
     params_s='t'+str(10*params[0])+'m'+str(10*params[1])+'q'+str(10*params[2])
+    print params
+    params=params[::2]
+    
+
     testspec2=params_to_spec([params], table)
     testspec2=testspec2[0]
 
@@ -198,7 +204,7 @@ def disk_spec(f, tablef='tmpd'):
     #Construct table
     table=construct_table(tablef)
     disk_params=get_params(f)
-    specs=params_to_spec(disk_params[:, 2:], table)
+    specs=params_to_spec(disk_params[:, 2::2], table)
 
     r=disk_params[:, 0:2]
     Teff=disk_params[:, 2]
