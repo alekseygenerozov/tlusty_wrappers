@@ -8,6 +8,13 @@ import astropy.table as at
 from astropy.io import ascii
 from types import*
 
+##Run a command from the bash shell
+def bash_command(cmd):
+     process=subprocess.Popen(['/bin/bash', '-c', cmd],  stdout=subprocess.PIPE)
+     process.wait()
+     return process
+
+
 # Function to parse file name in order to get list of parameters
 def parse_file(file):
     #Extracting parameters from file names
@@ -24,15 +31,9 @@ def parse_file(file):
     params=params/10.    
     return params
 
-##Run a command from the bash shell
-def bash_command(cmd):
-     process=subprocess.Popen(['/bin/bash', '-c', cmd],  stdout=subprocess.PIPE)
-     process.wait()
-     return process
-
 
 ##Setup input file for tlusty
-def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail', value=''):
+def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail', value='',interp=False):
         lte='T'
         if(nlte):
             lte='F'
@@ -84,8 +85,18 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
             if len(process.stdout.readlines())==0:
                 loc=''
                 return loc
-            bash_command('cp ' + model + '/fort.7 ' + './fort.8')
-            bash_command('cat '+ model + '/fort.9_old ' + model + '/fort.9 > fort.9_old' )
+            bash_command('cp ' + model + '/fort.7 ' + './')
+
+            #If we are interpolating to a new mass scale then construct new mass grid for unit 8 file
+            if (interp):
+                bash_command('echo 70 0.001 ' + str(10**log_dmtot) + ' 0 0 > dmgrid.in')
+                bash_command('rm dmgrid.out')
+                bash_command('./dmgrid')
+                bash_command('cat '+ model + '/fort.9_old ' + model + '/fort.9 > fort.9_old' )
+                bash_command('cat fort.7 dmgrid.out >fort.8')
+            else:    
+                bash_command('cat fort.7  >fort.8')
+
             if copy:
                 bash_command('cp ' + model + '/tmp.flag ' + './')
 
@@ -169,7 +180,7 @@ def clean(outdir,maxchange,nlte, remove=False):
 
 
 ##Run tlusty based on command line input parameters
-def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
+def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail', remove=False, value='',interp=False):
     log_teff=params[0]
     log_dmtot=params[1]
     log_qgrav=params[2]
@@ -188,7 +199,7 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
     #If we would like to calculate a combination on lte and nlte atmospheres
     if combo:
         nlte=True
-        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname,value)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname,value,interp)
         if not outdir: 
             return
         run()
@@ -199,7 +210,7 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
 
 
 ##Run tlusty based on parameters found at the location of model
-def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value=''):
+def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value='',interp=False):
     process=bash_command('check ' + model + '/fort.5')
     if len(process.stdout.readlines())==0:
         return
@@ -209,21 +220,20 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=Fals
     log_qgrav=np.log10(params[0][2])
     log_dmtot=np.log10(params[0][3])
     #print log_teff,log_dmtot
-
-    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value,interp)
     if not outdir:
         return
 
     run()
     maxchange=reltot()
     #Move tlusty output files to the appropriate directory
-    clean(outdir,maxchange,nlte, remove)
-    return maxchange
+    dest=clean(outdir,maxchange,nlte, remove)
+    return [maxchange, dest]
 
 
 
 ##Construct tlusty model based on info in myfile
-def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
+def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value='', interp=False):
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
@@ -244,7 +254,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
             nlte=False    
 
         #set up input files, then run tlusty, finally check for nominal convergence and move all output files to 
-        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value,interp)
         if not outdir:
             continue
         run()
@@ -292,6 +302,9 @@ def main():
     parser.add_argument('-nc', '--nocopy',
         help='This flag turns off the default behavior of copying tmp.flag from model location',
         action='store_true')
+    parser.add_argument('-i', '--interp',
+        help='Flag to turn mass depth interpolation on/off',
+        action='store_true')
     parser.add_argument('-ft', '--tail',
         help='Stores name of file containing atomic data.',
         default='tail')
@@ -315,14 +328,15 @@ def main():
     tailname=args.tail
     remove=args.remove
     value=args.value
+    interp=args.interp
 
 
     if params:
-        tlusty_runs_input(params, model, nlte, copy, combo, tailname, remove, value)
+        tlusty_runs_input(params, model, nlte, copy, combo, tailname, remove, value, interp)
     elif  model:
-        tlusty_runs_model(model, nlte, copy, tailname, remove, value)
+        tlusty_runs_model(model, nlte, copy, tailname, remove, value, interp)
     else:
-        tlusty_runs_file(myfile, nlte, copy, combo, tailname, remove, value)
+        tlusty_runs_file(myfile, nlte, copy, combo, tailname, remove, value, interp)
 
 
 if __name__ == '__main__':
