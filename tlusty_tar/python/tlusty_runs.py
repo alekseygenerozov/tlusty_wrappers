@@ -68,9 +68,9 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
         f5.write(tail) 
 
         #Format strings with info on teff, dmtot, qgrav for creating folder
-        t='{0:.3g}'.format(log_teff*10)
-        m='{0:.3g}'.format(log_dmtot*10)
-        q='{0:.3g}'.format(log_qgrav*10)
+        t='{0:.5g}'.format(log_teff*10)
+        m='{0:.5g}'.format(log_dmtot*10)
+        q='{0:.5g}'.format(log_qgrav*10)
 
         #print t
         #Create a folder in which to store the tlusty output in 
@@ -146,9 +146,9 @@ def clean(outdir,maxchange,nlte, remove=False):
 
     #constructing destination path
     dest='./'
-    if maxchange<0 and nlte:
+    if maxchange<-1 and nlte:
         dest=dest + outdir + '/converged'
-    elif maxchange<0:
+    elif maxchange<-1:
         dest=dest + outdir + '/lteconv'
     else:
         dest=dest + outdir + '/nconv'
@@ -186,6 +186,9 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
     log_qgrav=params[2]
 
     outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
+
+
+
     if not outdir:
         return
     run()
@@ -211,6 +214,8 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
 
 ##Run tlusty based on parameters found at the location of model
 def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value='',interp=False):
+
+
     process=bash_command('check ' + model + '/fort.5')
     if len(process.stdout.readlines())==0:
         return
@@ -234,6 +239,8 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=Fals
 
 ##Construct tlusty model based on info in myfile
 def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value='', interp=False):
+
+
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
