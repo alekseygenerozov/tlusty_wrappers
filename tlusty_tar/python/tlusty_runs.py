@@ -15,25 +15,72 @@ def bash_command(cmd):
      return process
 
 
-# Function to parse file name in order to get list of parameters
-def parse_file(file):
-    #Extracting parameters from file names
-    t=re.search("t[-+]?\d+",file)
-    t=re.search("[-+]?\d+",t.group(0))
+##Routine to parse atmosphere
+def parse_atm(f='fort.7'):
+    end=re.compile('fort.*')
+    f=re.sub(end,'',f)
+    if (f):
+        f=f+'/fort.7'
+    else:
+        f='fort.7'
+
+    #Importing data from file
+    atm=np.fromfile(f, sep=' ',dtype=float)
+    nd=int(atm[0])
+    blocks=int(atm[1])
+    m=atm[2:2+nd]
+    m=[m]
+    m=np.transpose(m)
+   
+    #Reshaping data array
+    atm=atm[2+nd:]
+    atm=np.reshape(atm, (-1,blocks))
+
+    print np.shape(m),np.shape(atm)
+    #Concatenating mass depth grid with the actual vertical structure data
+    atm=np.concatenate((m, atm), axis=1)
+    return atm
+
+
+#Checks atmospheric structures for density inversions greater than a certain threshold.
+def inv_check(atm, thres=1.e-2):
+    dens=atm[:,3]
+    diff=np.diff(dens)
+    dens=dens[:-1]
+    #Fractional change in density
+    frac=diff/dens
+    frac=np.min(frac)
+    print frac
+    #If the 'largest' negative fractional change in density exceeds the specified threshold then return True, otherwise
+    #return false
+    if(frac<-thres):
+        return True
+    else:
+        return False
+
+
+
+## Function to parse file name in order to get list of parameters
+def parse_file(f):
+    refloat =r'[+-]?\d+\.?\d*'
+    t=re.search("t"+refloat,f)
+    t=re.search(refloat,t.group(0))
     
-    m=re.search("m[-+]?\d+",file)
-    m=re.search("[-+]?\d+",m.group(0))
+    m=re.search("m"+refloat,f)
+    m=re.search(refloat,m.group(0))
     
-    q=re.search("q[-+]?\d+",file)
-    q=re.search("[-+]?\d+",q.group(0))
+    q=re.search("q"+refloat,f)
+    q=re.search(refloat,q.group(0))
+    
     
     params=np.array([float(t.group(0)), float(m.group(0)), float(q.group(0))])
-    params=params/10.    
+    params=params/10.
     return params
 
 
+
 ##Setup input file for tlusty
-def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail', value='',interp=False):
+def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail', value=''):
         lte='T'
         if(nlte):
             lte='F'
@@ -78,7 +125,10 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
         bash_command('mkdir -p ' + loc)
 
         #If the location of the input model is not blank then copy model atmosphere to the current directory
-        if model:    
+        if model:
+            mparams=parse_file(model)
+
+            print mparams  
             #Check if unit 7 file is present in the specified in location.      
             process=bash_command('check ' + model + '/fort.7')
             #If it is not found then return empty string as flag
@@ -86,20 +136,21 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
                 loc=''
                 return loc
             bash_command('cp ' + model + '/fort.7 ' + './')
-
             #If we are interpolating to a new mass scale then construct new mass grid for unit 8 file
-            if (interp):
+            if np.abs((log_dmtot-mparams[1])/mparams[1])>1.e-2:
                 bash_command('echo 70 0.001 ' + str(10**log_dmtot) + ' 0 0 > dmgrid.in')
                 bash_command('rm dmgrid.out')
                 bash_command('./dmgrid')
-                bash_command('cat '+ model + '/fort.9_old ' + model + '/fort.9 > fort.9_old' )
                 bash_command('cat fort.7 dmgrid.out >fort.8')
             else:    
                 bash_command('cat fort.7  >fort.8')
 
+            #If the copy parameter has been set then we should copy the optional parameters file from the model location as well
             if copy:
                 bash_command('cp ' + model + '/tmp.flag ' + './')
 
+            #Amalgamating the old convergence log information into a single file
+            bash_command('cat '+ model + '/fort.9_old ' + model + '/fort.9 > fort.9_old' )
         f=open('tmp.flag', 'a')
         if value:
             f.write(value+ '\n')
@@ -147,7 +198,11 @@ def clean(outdir,maxchange,nlte, remove=False):
     #constructing destination path
     dest='./'
     if maxchange<-1 and nlte:
-        dest=dest + outdir + '/converged'
+        atm=parse_atm('fort.7')
+        if inv_check(atm):
+            dest=dest + outdir + '/dens_inversion'
+        else:   
+            dest=dest + outdir + '/converged'
     elif maxchange<-1:
         dest=dest + outdir + '/lteconv'
     else:
@@ -180,7 +235,7 @@ def clean(outdir,maxchange,nlte, remove=False):
 
 
 ##Run tlusty based on command line input parameters
-def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail', remove=False, value='',interp=False):
+def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
     log_teff=params[0]
     log_dmtot=params[1]
     log_qgrav=params[2]
@@ -202,7 +257,7 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
     #If we would like to calculate a combination on lte and nlte atmospheres
     if combo:
         nlte=True
-        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname,value,interp)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname,value)
         if not outdir: 
             return
         run()
@@ -214,8 +269,6 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
 
 ##Run tlusty based on parameters found at the location of model
 def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value='',interp=False):
-
-
     process=bash_command('check ' + model + '/fort.5')
     if len(process.stdout.readlines())==0:
         return
@@ -225,7 +278,7 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=Fals
     log_qgrav=np.log10(params[0][2])
     log_dmtot=np.log10(params[0][3])
     #print log_teff,log_dmtot
-    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value,interp)
+    outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
     if not outdir:
         return
 
@@ -238,7 +291,7 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=Fals
 
 
 ##Construct tlusty model based on info in myfile
-def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value='', interp=False):
+def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
 
 
     params=ascii.read(myfile)
@@ -261,7 +314,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
             nlte=False    
 
         #set up input files, then run tlusty, finally check for nominal convergence and move all output files to 
-        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value,interp)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
         if not outdir:
             continue
         run()
@@ -309,9 +362,6 @@ def main():
     parser.add_argument('-nc', '--nocopy',
         help='This flag turns off the default behavior of copying tmp.flag from model location',
         action='store_true')
-    parser.add_argument('-i', '--interp',
-        help='Flag to turn mass depth interpolation on/off',
-        action='store_true')
     parser.add_argument('-ft', '--tail',
         help='Stores name of file containing atomic data.',
         default='tail')
@@ -335,15 +385,15 @@ def main():
     tailname=args.tail
     remove=args.remove
     value=args.value
-    interp=args.interp
+
 
 
     if params:
-        tlusty_runs_input(params, model, nlte, copy, combo, tailname, remove, value, interp)
+        tlusty_runs_input(params, model, nlte, copy, combo, tailname, remove, value)
     elif  model:
-        tlusty_runs_model(model, nlte, copy, tailname, remove, value, interp)
+        tlusty_runs_model(model, nlte, copy, tailname, remove, value)
     else:
-        tlusty_runs_file(myfile, nlte, copy, combo, tailname, remove, value, interp)
+        tlusty_runs_file(myfile, nlte, copy, combo, tailname, remove, value)
 
 
 if __name__ == '__main__':
