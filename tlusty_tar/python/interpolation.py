@@ -4,10 +4,8 @@ import re
 
 from matplotlib import rc
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
 import argparse
-import subprocess
 
 
 
@@ -16,12 +14,6 @@ c=3*10**10
 h=6.67*10**-27
 kb=1.38*10**-16
 
-
-##Run a command from the bash shell
-def bash_command(cmd):
-     process=subprocess.Popen(['/bin/bash', '-c', cmd],  stdout=subprocess.PIPE)
-     process.wait()
-     return process
 
 # Function to extract frequency from wavelength in angstroms
 def get_freq(w):
@@ -58,7 +50,6 @@ def get_spec(file, nfreq=300, mu=-1, nmu=10):
     
     spec=spec[::2]
     wl=wlh[::2]
-
     
     #mu is and index for the polar angle to use. -1 corresponds to returning emergent flux from the disk
     if mu == -1:
@@ -69,8 +60,6 @@ def get_spec(file, nfreq=300, mu=-1, nmu=10):
         
     spec=spec.reshape(( nfreq, nmu))   
     spec=spec[:, mu]
-
-    print np.shape(wl), np.shape(spec), f
     
     spec=np.vstack((wl,spec)) 
     return spec
@@ -196,7 +185,7 @@ def test_spec(f, table=[], tablef='tmpd'):
     testspec2=params_to_spec([params], table)
     testspec2=testspec2[0]
 
-    fig=plt.figure()
+    plt.figure()
     plt.loglog()
     #plt.figsize(20, 8) 
     plt.xlabel('nu [hz]')
@@ -207,7 +196,6 @@ def test_spec(f, table=[], tablef='tmpd'):
     plt.plot(testspec[0], testspec[0]*testspec[1])
     plt.plot(testspec2[0], testspec2[0]*testspec2[1])
     plt.savefig(params_s+'.pdf')
-    return fig
     #plt.show()
 
 
@@ -226,57 +214,47 @@ def disk_spec(f, tablef='tmpd'):
     totf1=totf[1]
     totf2=totf[0]
 
-    fig=plt.figure()
-
     plt.loglog()
     #plt.figsize(20, 8)
     plt.xlabel("nu [hz]")
     plt.ylabel("nu L_nu [ergs/s]")
     plt.axis([10.**14, 2*10.**18, 10.**38, 10.**44]) 
+    p
 
     plt.plot(totf1[0], totf1[0]*totf1[1])
     plt.plot(totf2[0], totf2[0]*totf2[1])
     plt.show()
-    return fig
 
 def main():
     parser=argparse.ArgumentParser(
-        description='Either takes list of disk parameters and computes composite disk spectrum from table or compares spectra interpolated'+
-          ' from table to those in a test directory')
-    parser.add_argument('-f', '--file',
+        description='Computes composite disk spectrum based on TLUSTY disk spectra')
+    parser.add_argument('f',
         help='file name containing radial disk profile ',
-        default='')
-    parser.add_argument('-d', '--dir',
-        help='directory containing the location of models to test',
-        default='')
+        type=str)
 
     args=parser.parse_args()
-    f=args.file
-    d=args.dir
+    f=args.f
 
-    pdf_pages = PdfPages('out.pdf')
-
-    if f:
-        fig=disk_spec(f)
-        pdf_pages.savefig(fig)
-    elif d:
-        process=bash_command('ls '+d)
-        for m in process.stdout.readlines():
-            m=m.rstrip()
-            fig=test_spec('./'+d+'/'+m)
-            pdf_pages.savefig(fig)
-    else:
-        parser.print_help()
-
-    pdf_pages.close()
-
-
+    disk_spec(f)
 
 if __name__ == '__main__':
     main()
     
     
-
+# def Knu(es, f):
+#     return -0.3333333333333333 + (0.41997368329829105*(-1. + 2.*es - \
+#     1.*es**2))/(2. - 12.*es + 30.*es**2 - 40.*es**3 + 30.*es**4 - \
+#     12.*es**5 + 2.*es**6 - 27.*es**2*f + 108.*es**3*f - 162.*es**4*f + \
+#     108.*es**5*f - 27.*es**6*f + np.sqrt(-4.*(-1. + 2.*es - 1.*es**2)**6 + \
+#     (2. - 12.*es + 30.*es**2 - 40.*es**3 + 30.*es**4 - 12.*es**5 + \
+#     2.*es**6 - 27.*es**2*f + 108.*es**3*f - 162.*es**4*f + 108.*es**5*f - \
+#     27.*es**6*f)**2))**0.3333333333333333 + (0.26456684199469993*(2. - \
+#     12.*es + 30.*es**2 - 40.*es**3 + 30.*es**4 - 12.*es**5 + 2.*es**6 - \
+#     27.*es**2*f + 108.*es**3*f - 162.*es**4*f + 108.*es**5*f - \
+#     27.*es**6*f + np.sqrt(-4.*(-1. + 2.*es - 1.*es**2)**6 + (2. - 12.*es + \
+#     30.*es**2 - 40.*es**3 + 30.*es**4 - 12.*es**5 + 2.*es**6 - \
+#     27.*es**2*f + 108.*es**3*f - 162.*es**4*f + 108.*es**5*f - \
+#     27.*es**6*f)**2))**0.3333333333333333)/(-1. + 2.*es - 1.*es**2)
     
 
 # def Knu(es, f):
