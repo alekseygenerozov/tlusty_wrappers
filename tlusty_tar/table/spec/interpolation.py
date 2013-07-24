@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from scipy.interpolate import griddata
 import numpy as np
 import re
@@ -8,6 +10,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 import argparse
 import subprocess
+
+import graybody as gray
 
 
 
@@ -161,7 +165,7 @@ def params_to_spec(params, table):
     return np.array(grid2)
 
 # Computes composite spectrum given array of radii, spectra. Also computes corresponding blackbody spectrum using list of Teff that are passed to the function
-def sum_spec(r, specs, Teff):   
+def sum_spec(r, specs, Teff, Qg):   
     dr=r[:, 0]
     r=r[:, 1]
     nu=specs[0,0]
@@ -169,13 +173,15 @@ def sum_spec(r, specs, Teff):
         
     L=np.zeros(len(nu))
     bb=np.zeros(len(nu))
+    gb=np.zeros(len(nu))
     for i in range(len(r)):
         for j in range(len(nu)):
             L[j]+=2*np.pi*r[i]*dr[i]*f[i,j]
             bb[j]+=2*np.pi*r[i]*dr[i]*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
+            gb[j]+=2*np.pi*r[i]*dr[i]*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
             #bb[j]*=2*np.pi*r[i]*dr[i]
         
-    return (np.vstack([nu, bb]), np.vstack([nu, L])) 
+    return (np.vstack([nu, gb]),np.vstack([nu, bb]), np.vstack([nu, L])) 
     #return np.vstack([nu, (nu*2*np.pi*r*dr*f).sum(axis=0)])
 
 
@@ -183,7 +189,7 @@ def sum_spec(r, specs, Teff):
 def test_spec(f, table=[], tablef='tmpd'):
     if table==[]:
         table=construct_table(tablef)
-    print table[0]
+    #print table[0]
     testspec=get_spec(f)
     testspec=regrid(testspec)
     
@@ -220,22 +226,27 @@ def disk_spec(f, tablef='tmpd'):
 
     r=disk_params[:, 0:2]
     Teff=disk_params[:, 2]
+    Qg=disk_params[:, 4]
 
     #Finding the total flux
-    totf=sum_spec(r, specs, Teff)
-    totf1=totf[1]
-    totf2=totf[0]
+    totf=sum_spec(r, specs, Teff, Qg)
+    totfg=totf[0]
+    totfb=totf[1]
+    totft=totf[2]
+    #totfg2=np.genfromtxt('gray_test')
+    
 
     fig=plt.figure()
-
     plt.loglog()
     #plt.figsize(20, 8)
     plt.xlabel("nu [hz]")
     plt.ylabel("nu L_nu [ergs/s]")
-    plt.axis([10.**14, 2*10.**18, 10.**38, 10.**44]) 
+    plt.axis([10.**14, 2*10.**18, 10.**38, 10.**45]) 
 
-    plt.plot(totf1[0], totf1[0]*totf1[1])
-    plt.plot(totf2[0], totf2[0]*totf2[1])
+    plt.plot(totfg[0], totfg[0]*totfg[1])
+    plt.plot(totfb[0], totfb[0]*totfb[1])
+    plt.plot(totft[0], totft[0]*totft[1])
+    #plt.plot(totfg2[:,0], totfg2[:,0]*totfg2[:,1])
     plt.show()
     return fig
 
