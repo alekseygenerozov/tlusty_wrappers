@@ -248,7 +248,7 @@ def converge_check(f='fort.9',  thres=0.1):
             if chmax[-i, 1]>1.01*chmax[-i-1,1]:
                 mono=False
 
-    print mono            
+    #print mono            
     
     bounded=True
     #Check to see if maximum relative change is bounded by by our threshold over the last few iterations
@@ -267,6 +267,10 @@ def clean(outdir, nlte, remove=False):
     #maxchange= np.log10(np.absolute(maxchange))
     [conv,conv2]=converge_check()
     atm=parse_atm('fort.7')
+    nan_present=np.any(np.isnan(atm))
+    if nan_present:
+        print 'Warning NANs detected in the TLUSTY output atmosphere!'
+        conv=conv2=False
     inv=inv_check(atm)
 
     prefix=''
@@ -286,6 +290,7 @@ def clean(outdir, nlte, remove=False):
             dest=dest + outdir + '/'+prefix+'converged_marginal'
     else:
         dest=dest + outdir + '/nconv'
+
 
     
     #check for existence of destination file
@@ -327,7 +332,7 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
     [conv,model]=clean(outdir, nlte, remove)       
     if not conv:
         return
-
+    print model
     #If we would like to calculate a combination of lte and nlte atmospheres
     if combo:
         nlte=True
