@@ -36,7 +36,7 @@ def parse_atm(f='fort.7'):
     atm=atm[2+nd:]
     atm=np.reshape(atm, (-1,blocks))
 
-    print np.shape(m),np.shape(atm)
+    #print np.shape(m),np.shape(atm)
     #Concatenating mass depth grid with the actual vertical structure data
     atm=np.concatenate((m, atm), axis=1)
     return atm
@@ -50,14 +50,13 @@ def inv_check(atm, thres=1.e-2):
     #Fractional change in density
     frac=diff/dens
     frac=np.min(frac)
-    print frac
+    #print frac
     #If the 'largest' negative fractional change in density exceeds the specified threshold then return True, otherwise
     #return false
     if(frac<-thres):
         return True
     else:
         return False
-
 
 
 ## Function to parse file name in order to get list of parameters
@@ -128,7 +127,6 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
         if model:
             mparams=parse_file(model)
 
-            print mparams  
             #Check if unit 7 file is present in the specified in location.      
             process=bash_command('check ' + model + '/fort.7')
             #If it is not found then return empty string as flag
@@ -165,46 +163,127 @@ def run():
     bash_command(cmd)
 
 
-##Gets nominal convergence from the convergence log file in tlusty
-def reltot(file='fort.9'):
-    dat=np.genfromtxt(file, skip_header=3)
+# ##Gets nominal convergence from the convergence log file in tlusty
+# def reltot(file='fort.9'):
+#     dat=np.genfromtxt(file, skip_header=3)
 
-    niter= dat[-1, 0]
-    dat_cut=dat[(dat[:,0]==niter)]
-    #Check for non-numeric values in the convergence log
+#     niter= dat[-1, 0]
+#     dat_cut=dat[(dat[:,0]==niter)]
+#     #Check for non-numeric values in the convergence log
+#     try:
+#          change=dat_cut[:, 2:7]
+#          change=np.array(map(np.abs, change))
+#          maxchange=change.max()
+#          #print maxchange
+#     except ValueError:
+#          maxchange=1000
+
+#     #Using numpy's is nan function to check if the maximum change is a nan
+#     if np.isnan(maxchange):
+#          maxchange=1000
+#     #Probably not good if the maximum is precisely zero
+#     if maxchange==0:
+#          return 1000
+
+#     print niter, maxchange
+#     return maxchange
+
+
+##Function which parse tlusty convergence log
+def converge_parse(f='fort.9'):
+    #In case user decided to enter fort file name after directory name (i.e sanitizing user input file)
+    suffix=re.compile('fort.*')
+    f=re.sub(suffix,'',f)
+    if (f):
+        f=f+'/fort.9'
+    else:
+        f='fort.9'
+
+    #Importing dat from from the specified file
+    dat=np.genfromtxt(f, skip_header=3)
+    #Split at specific locations (i.e. split convergence data by iteration)
+    diff=np.diff(dat[:, 0])
+    br=np.where((diff!=0))
+    if(len(br[0])>0):
+        br=br[0][0]
+    else:
+        br=69
+    dat=np.reshape(dat, ((-1,br+1,9)))
+    #Taking all of the values corresponding to the changes in state vector
+    dat=dat[:,:,2:7]
+    
+    #Making all the log changes are positive; sometime log entries contain invalid numbers, in which case we would want to
+    #raise an exception
     try:
-         change=dat_cut[:, 2:7]
-         change=np.array(map(np.abs, change))
-         maxchange=change.max()
-         #print maxchange
-    except ValueError:
-         maxchange=1000
+        dat=np.abs(dat)
+    except:
+        raise
 
-    #Using numpy's is nan function to check if the maximum change is a nan
-    if np.isnan(maxchange):
-         maxchange=1000
-    #Probably not good if the maximum is precisely zero
-    if maxchange==0:
-         return 1000
+    #Getting the maximum change in state vector for each iteration
+    chmax=np.empty([len(dat),2])
+    for i in range(len(dat)):
+        chmax[i]=np.array([i+1, dat[i].max()])
+        if np.isnan(chmax[i, 1]):
+            raise
+    chmax=np.array(chmax)
+    return chmax
 
-    print niter, maxchange
-    return maxchange
+##Check convergence log
+def converge_check(f='fort.9',  thres=0.1):
+    #Maximum change read from the convergence log; if an exception is raised then return false (i.e. the atmosphere
+    #does not converge)
+    try:
+        chmax=converge_parse(f)
+    except:
+        return False
+
+    end=min([4, len(chmax)])
+
+    print chmax[-1,0],chmax[-1,1]
+    conv=(chmax[-1, 1]<thres)
+
+    mono=True
+    if (len(chmax)>=2):
+        for i in range(1,end):
+            if chmax[-i, 1]>1.01*chmax[-i-1,1]:
+                mono=False
+
+    print mono            
+    
+    bounded=True
+    #Check to see if maximum relative change is bounded by by our threshold over the last few iterations
+    for i in range(1, end+1):
+        if chmax[-i, 1]>thres:
+            bounded=False
+    #Check if the relative change in state vector has been montonically non-increasing for the last few iterations
+    #somewhat arbitrarily picked 4. If the total number of iterations is less than 4 then give the model the benefit of the doubt.
+    conv2=(conv and mono) or bounded
+    return [conv, conv2]
+
 
 
 ##Move all tlusty output files to the apropriate directory    
-def clean(outdir,maxchange,nlte, remove=False):
-    maxchange= np.log10(np.absolute(maxchange))
+def clean(outdir, nlte, remove=False):
+    #maxchange= np.log10(np.absolute(maxchange))
+    [conv,conv2]=converge_check()
+    atm=parse_atm('fort.7')
+    inv=inv_check(atm)
 
+    prefix=''
+    if not nlte:
+        prefix='lte_'
     #constructing destination path
     dest='./'
-    if maxchange<-1 and nlte:
-        atm=parse_atm('fort.7')
-        if inv_check(atm):
-            dest=dest + outdir + '/dens_inversion'
+    if conv2:
+        if inv:
+            dest=dest + outdir + '/'+prefix+'dens_inversion'
         else:   
-            dest=dest + outdir + '/converged'
-    elif maxchange<-1:
-        dest=dest + outdir + '/lteconv'
+            dest=dest + outdir + '/'+prefix+'converged'
+    elif conv:
+        if inv:
+            dest=dest + outdir + '/'+prefix+'dens_inversion_marginal'
+        else:   
+            dest=dest + outdir + '/'+prefix+'converged_marginal'
     else:
         dest=dest + outdir + '/nconv'
 
@@ -231,7 +310,7 @@ def clean(outdir,maxchange,nlte, remove=False):
     #move optional parameter file to destination
     bash_command('cp ' + 'tmp.flag ' + dest)
 
-    return dest
+    return [conv2, dest]
 
 
 ##Run tlusty based on command line input parameters
@@ -241,29 +320,23 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
     log_qgrav=params[2]
 
     outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
-
-
-
     if not outdir:
         return
     run()
-    maxchange=reltot()
     #Move tlusty output files to the appropriate directory
-    outdir=clean(outdir,maxchange,nlte, remove)
-    if maxchange>1:
+    [conv,model]=clean(outdir, nlte, remove)       
+    if not conv:
         return
-    #return maxchange
 
-    #If we would like to calculate a combination on lte and nlte atmospheres
+    #If we would like to calculate a combination of lte and nlte atmospheres
     if combo:
         nlte=True
-        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname,value)
+        outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, True, tailname, value)
         if not outdir: 
             return
         run()
-        maxchange=reltot()
         #Move tlusty output files to the appropriate directory
-        outdir=clean(outdir,maxchange,nlte, remove)
+        clean(outdir, nlte, remove)
 
 
 
@@ -283,17 +356,14 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=Fals
         return
 
     run()
-    maxchange=reltot()
     #Move tlusty output files to the appropriate directory
-    dest=clean(outdir,maxchange,nlte, remove)
-    return [maxchange, dest]
+    clean(outdir, nlte, remove)
+    #return [maxchange, dest]
 
 
 
 ##Construct tlusty model based on info in myfile
 def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
-
-
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
@@ -318,26 +388,22 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
         if not outdir:
             continue
         run()
-        maxchange=reltot()
+        #maxchange=reltot()
         #Move tlusty output files to the appropriate directory
-        outdir=clean(outdir,maxchange,nlte, remove)
-        if maxchange>1:
-             continue
+        [conv,model]=clean(outdir, nlte, remove)       
+        if not conv:
+            continue
 
-        #If we would like to calculate a combination on lte and nlte atmospheres
+        #If we would like to calculate a combination of lte and nlte atmospheres
         if combo:
             nlte=True
-            outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, outdir, True, tailname)
+            outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, True, tailname)
             if not outdir:
                 continue
             run()
-            maxchange=reltot()
+            #maxchange=reltot()
             #Move tlusty output files to the appropriate directory
-            outdir=clean(outdir,maxchange,nlte, remove)
-
-
-
-
+            clean(outdir,nlte, remove)
 
 
 ##Driver; parse user input
