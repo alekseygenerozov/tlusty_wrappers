@@ -77,6 +77,18 @@ def parse_file(f):
     return params
 
 
+#Go from a list of parameters to corresponding string
+def reverse_parse(params):
+        #Format strings with info on teff, dmtot, qgrav for creating folder
+        t='{0:.5g}'.format(params[0]*10)
+        m='{0:.5g}'.format(params[1]*10)
+        q='{0:.5g}'.format(params[2]*10)
+
+        f= 't' + t + 'm' + m + 'q' + q
+        return f
+
+
+
 
 ##Setup input file for tlusty
 def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail', value=''):
@@ -122,6 +134,7 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
         #Create a folder in which to store the tlusty output in 
         loc='t' + t + 'm' + m + 'q' + q
         bash_command('mkdir -p ' + loc)
+
 
         #If the location of the input model is not blank then copy model atmosphere to the current directory
         if model:
@@ -235,7 +248,7 @@ def converge_check(f='fort.9',  thres=0.1):
     try:
         chmax=converge_parse(f)
     except:
-        return False
+        return [False,False]
 
     end=min([4, len(chmax)])
 
@@ -376,15 +389,18 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
 
     #for each set of parameters in our input file
     for i in range(0, len(params)): 
+        model=''
         f=open('fort.5', 'w')
         tailf=open('tail', 'r')
-
+    
         log_teff=params[i][0]
         log_dmtot=params[i][1]
         log_qgrav=params[i][2]
 
         if ncols>3:
             model=params[i][3]
+        if model:
+            combo=False
         if combo:
             nlte=False    
 
