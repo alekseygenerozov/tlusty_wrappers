@@ -205,14 +205,14 @@ def test_spec(f, table=[], tablef='tmpd'):
     fig=plt.figure()
     plt.loglog()
     #plt.figsize(20, 8) 
-    plt.xlabel('nu [hz]')
-    plt.ylabel("nu F_nu [ergs/s/cm^2]")
+    plt.xlabel(r"$\nu$ [hz]")
+    plt.ylabel(r"$\nu F_{\nu}$ [$ergs s^{-1} cm^{-2}$ ]")
     plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
     plt.title(params_s)
     
     plt.plot(testspec[0], testspec[0]*testspec[1])
     plt.plot(testspec2[0], testspec2[0]*testspec2[1])
-    plt.savefig(params_s+'.pdf')
+    #plt.savefig(params_s+'.pdf')
     return fig
     #plt.show()
 
@@ -239,8 +239,8 @@ def disk_spec(f, tablef='tmpd'):
     fig=plt.figure()
     plt.loglog()
     #plt.figsize(20, 8)
-    plt.xlabel("nu [hz]")
-    plt.ylabel("nu L_nu [ergs/s]")
+    plt.xlabel(r"$\nu$ [hz]")
+    plt.ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
     plt.axis([10.**14, 2*10.**18, 10.**38, 10.**45]) 
 
     plt.plot(totfg[0], totfg[0]*totfg[1])
@@ -260,26 +260,38 @@ def main():
     parser.add_argument('-d', '--dir',
         help='directory containing the location of models to test',
         default='')
+    parser.add_argument('-tf', '--tablefile',
+        help='name of file containing list of table models',
+        default='tmpd')
 
     args=parser.parse_args()
     f=args.file
     d=args.dir
+    tablef=args.tablefile
 
-    pdf_pages = PdfPages('out.pdf')
+    
 
     if f:
-        fig=disk_spec(f)
+        pdf_pages = PdfPages('composite.pdf')
+        fig=disk_spec(f, tablef=tablef)
         pdf_pages.savefig(fig)
+
+        pdf_pages.close()
     elif d:
+        pdf_pages = PdfPages('interp_test.pdf')
         process=bash_command('ls '+d)
+        table=construct_table(tablef)
         for m in process.stdout.readlines():
             m=m.rstrip()
-            fig=test_spec('./'+d+'/'+m)
+            fig=test_spec('./'+d+'/'+m, table=table, tablef=tablef)
+            #Save file 
             pdf_pages.savefig(fig)
+
+        pdf_pages.close()
     else:
         parser.print_help()
 
-    pdf_pages.close()
+    #pdf_pages.close()
 
 
 
