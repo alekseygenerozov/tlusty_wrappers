@@ -13566,6 +13566,7 @@ C
       INCLUDE 'ATOMIC.FOR'
       INCLUDE 'MODELQ.FOR'
       INCLUDE 'ARRAY1.FOR'
+      real lteff,lqgr,ldmt,lpb,lpgb,lzd
 C
 C ************    Print emergent radiation field on unit 13, namely
 C
@@ -13699,7 +13700,14 @@ C
   698    format(i3,1p11d11.4)
          end if
    70 CONTINUE
-      write(110, 702) teff,dmtot,qgrav,ptint/ZD(1), pgint/ZD(1), ZD(1)
+      lteff=log10(teff)
+      ldmt=log10(dmtot)
+      lqgr=log10(qgrav)
+      lpb=log10(ptint/ZD(1))
+      lpgb=log10(pgint/ZD(1))
+      lzd=log10(ZD(1))
+      write(110, 705) lteff,ldmt,lqgr,lpb,lpgb,lzd
+ 705  FORMAT(1H ,0pf10.3,0pf10.3,0pf10.3,0pf10.3,0pf10.3,0pf10.3)
       if(hmix0.ge.0) then
          call CONOUT(1,1)
       endif
