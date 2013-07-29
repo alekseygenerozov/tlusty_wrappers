@@ -27,7 +27,7 @@ def bash_command(cmd):
      process.wait()
      return process
 
-# Function to extract frequency from wavelength in angstroms
+##Function to extract frequency from wavelength in angstroms
 def get_freq(w):
     return c*10**8/w
 
@@ -136,7 +136,7 @@ def bright_inv(spec_inv, fcol=2):
 
 
 # Constructing table of spectra from unit 14 files
-def construct_table(models):
+def construct_table(models, logi=False):
     models=np.genfromtxt(models, dtype='string')
     params=map(parse_file,models)
     params=np.array(params)
@@ -145,11 +145,19 @@ def construct_table(models):
     spec=map(get_spec, models)
     spec=np.array(spec)
     spec=map(regrid, spec)
+    spec=np.array(spec)
 
-    spec_inv=map(bright_spec, spec)
-    spec_inv=np.array(spec_inv)
+    if logi:
+        print 'test'
+        spec[:, 1]=np.log10(spec[:, 1])
+        spec=np.array(spec)
+    else:
+        spec=map(bright_spec, spec)
+        spec=np.array(spec)
+
+
     
-    return (params, spec_inv)
+    return (params, spec)
 
     
 # Get parameters corresponding to our disk
@@ -158,11 +166,26 @@ def get_params(file):
 
 
 # Use table construct spectra from list of parameters
-def params_to_spec(params, table):
-    grid2=griddata(table[0], table[1], params)#, fill_value=1.e-36)
-    grid2=map(bright_inv,grid2)
+def params_to_spec(params, table, linear=False, logi=False):
+    # method='cubic'
+    # if linear:
+    #     method='linear'
+    grid2=griddata(table[0], table[1], params)
+    good=np.empty(len(grid2), dtype=bool)
+    for i in range(len(grid2)):
+        #print np.any(np.isnan(grid2[i]))
+        if np.any(np.isnan(grid2[i])):
+            good[i]=False
+        elif logi:
+            grid2[i,1]=10.**grid2[i,1]
+            good[i]=True
+        else:
+            #print params[i]
+            grid2[i]=bright_inv(grid2[i])
+            good[i]=True
     
-    return np.array(grid2)
+    #Return the interpolated spectra for parameters within our grid
+    return grid2[good]
 
 # Computes composite spectrum given array of radii, spectra. Also computes corresponding blackbody spectrum using list of Teff that are passed to the function
 def sum_spec(r, specs, Teff, Qg):   
@@ -170,11 +193,11 @@ def sum_spec(r, specs, Teff, Qg):
     r=r[:, 1]
     nu=specs[0,0]
     f=specs[:, 1]
-        
+ 
     L=np.zeros(len(nu))
     bb=np.zeros(len(nu))
     gb=np.zeros(len(nu))
-    for i in range(len(r)):
+    for i in range(len(specs)):
         for j in range(len(nu)):
             L[j]+=2*np.pi*r[i]*dr[i]*f[i,j]
             bb[j]+=2*np.pi*r[i]*dr[i]*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
@@ -185,10 +208,10 @@ def sum_spec(r, specs, Teff, Qg):
     #return np.vstack([nu, (nu*2*np.pi*r*dr*f).sum(axis=0)])
 
 
-# Compares tlusty spectrum to one that is interpolated from a table 
-def test_spec(f, table=[], tablef='tmpd'):
+##Compares tlusty spectrum to one that is interpolated from a table 
+def test_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
     if table==[]:
-        table=construct_table(tablef)
+        table=construct_table(tablef, logi=logi)
     #print table[0]
     testspec=get_spec(f)
     testspec=regrid(testspec)
@@ -199,7 +222,7 @@ def test_spec(f, table=[], tablef='tmpd'):
     params=params[::2]
     
 
-    testspec2=params_to_spec([params], table)
+    testspec2=params_to_spec([params], table, linear=linear, logi=logi)
     testspec2=testspec2[0]
 
     fig=plt.figure()
@@ -218,11 +241,16 @@ def test_spec(f, table=[], tablef='tmpd'):
 
 
 # Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, tablef='tmpd'):
+def disk_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
     #Construct table
-    table=construct_table(tablef)
-    disk_params=get_params(f)
-    specs=params_to_spec(disk_params[:, 2::2], table)
+    if table==[]:
+        table=construct_table(tablef, logi=logi)
+    print f
+    bin_params=np.fromfile(f, dtype=float, sep=' ',count=3)
+    disk_params=np.genfromtxt(f, skip_header=1)
+
+
+    specs=params_to_spec(disk_params[:, 2::2], table, linear=linear, logi=logi)
 
     r=disk_params[:, 0:2]
     Teff=disk_params[:, 2]
@@ -242,12 +270,13 @@ def disk_spec(f, tablef='tmpd'):
     plt.xlabel(r"$\nu$ [hz]")
     plt.ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
     plt.axis([10.**14, 2*10.**18, 10.**38, 10.**45]) 
+    plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
 
     plt.plot(totfg[0], totfg[0]*totfg[1])
     plt.plot(totfb[0], totfb[0]*totfb[1])
     plt.plot(totft[0], totft[0]*totft[1])
     #plt.plot(totfg2[:,0], totfg2[:,0]*totfg2[:,1])
-    plt.show()
+    #plt.show()
     return fig
 
 def main():
@@ -255,7 +284,7 @@ def main():
         description='Either takes list of disk parameters and computes composite disk spectrum from table or compares spectra interpolated'+
           ' from table to those in a test directory')
     parser.add_argument('-f', '--file',
-        help='file name containing radial disk profile ',
+        help='file with list of files containing radial disk profiles ',
         default='')
     parser.add_argument('-d', '--dir',
         help='directory containing the location of models to test',
@@ -263,27 +292,40 @@ def main():
     parser.add_argument('-tf', '--tablefile',
         help='name of file containing list of table models',
         default='tmpd')
+    # parser.add_argument('-l', '--linear',
+    #     help='Specify order of interpolation should be linear for table',
+    #     action='store_true')
+    parser.add_argument('-li', '--logi',
+        help='Specifies that the interpolation should be done in terms of log intensity instead of brightness temp.',
+        action='store_true')
 
     args=parser.parse_args()
     f=args.file
     d=args.dir
+    #linear=args.linear
+    linear=False
     tablef=args.tablefile
+    logi=args.logi
 
     
-
+   
     if f:
+        table=construct_table(tablef, logi=logi)
         pdf_pages = PdfPages('composite.pdf')
-        fig=disk_spec(f, tablef=tablef)
-        pdf_pages.savefig(fig)
-
+        param_files=np.genfromtxt(f, dtype=str)
+        for pf in param_files:
+            print param_files
+            fig=disk_spec(pf, table=table, tablef=tablef, linear=linear)
+            pdf_pages.savefig(fig)
         pdf_pages.close()
     elif d:
+        table=construct_table(tablef, logi=logi)
         pdf_pages = PdfPages('interp_test.pdf')
         process=bash_command('ls '+d)
-        table=construct_table(tablef)
+        # table=construct_table(tablef, logi=logi)
         for m in process.stdout.readlines():
             m=m.rstrip()
-            fig=test_spec('./'+d+'/'+m, table=table, tablef=tablef)
+            fig=test_spec('./'+d+'/'+m, table=table, tablef=tablef, linear=linear, logi=logi)
             #Save file 
             pdf_pages.savefig(fig)
 
