@@ -2,6 +2,7 @@
 
 from scipy.interpolate import griddata
 import numpy as np
+import numpy.ma as ma
 import re
 
 from matplotlib import rc
@@ -105,7 +106,12 @@ def Tb(freq, intens, fcol=2):
 
 # Invert brightness temperature to obtain the intensity
 def Tb_inv(freq, Tb, fcol=2):
-    return (2./fcol**4)*(h*(freq**3)/c/c)/(np.exp(h*freq/kb/fcol/10**Tb)-1)
+    if np.isinf(np.exp(h*freq/kb/fcol/10**Tb)):
+        return 0
+    try:
+        return (2./fcol**4)*(h*(freq**3)/c/c)/(np.exp(h*freq/kb/fcol/10**Tb)-1)
+    except:
+        return 0
    
 
     
@@ -155,56 +161,73 @@ def construct_table(models, logi=False):
         spec=map(bright_spec, spec)
         spec=np.array(spec)
 
-
-    
     return (params, spec)
 
     
-# Get parameters corresponding to our disk
+##Get parameters corresponding to our disk
 def get_params(file):
     return np.genfromtxt(file)
 
 
-# Use table construct spectra from list of parameters
+##Use table construct spectra from list of parameters
 def params_to_spec(params, table, linear=False, logi=False):
     # method='cubic'
     # if linear:
     #     method='linear'
     grid2=griddata(table[0], table[1], params)
+    #grid2=ma.array(grid2)
     good=np.empty(len(grid2), dtype=bool)
     for i in range(len(grid2)):
         #print np.any(np.isnan(grid2[i]))
         if np.any(np.isnan(grid2[i])):
-            good[i]=False
+            continue
+            #grid2[i]=ma.masked
         elif logi:
             grid2[i,1]=10.**grid2[i,1]
-            good[i]=True
+            #good[i]=True
         else:
             #print params[i]
             grid2[i]=bright_inv(grid2[i])
-            good[i]=True
+            #good[i]=True
     
     #Return the interpolated spectra for parameters within our grid
-    return grid2[good]
+    return grid2
+    #return grid2[good]
 
 # Computes composite spectrum given array of radii, spectra. Also computes corresponding blackbody spectrum using list of Teff that are passed to the function
 def sum_spec(r, specs, Teff, Qg):   
     dr=r[:, 0]
     r=r[:, 1]
+    #print specs.shape
+    #Implicitly assuming that the first entry is not outside our grid -- not ideal!
     nu=specs[0,0]
+    #print nu
     f=specs[:, 1]
- 
+
     L=np.zeros(len(nu))
+    L2=np.zeros(len(nu))
     bb=np.zeros(len(nu))
     gb=np.zeros(len(nu))
-    for i in range(len(specs)):
+    for i in range(len(r)):
+        #Check for any invalid entries -- these correspond to the parameters outside the edge of our table
+        valid=not np.any(np.isnan(specs[i]))
+        rad=2*np.pi*r[i]*dr[i]
         for j in range(len(nu)):
-            L[j]+=2*np.pi*r[i]*dr[i]*f[i,j]
-            bb[j]+=2*np.pi*r[i]*dr[i]*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
-            gb[j]+=2*np.pi*r[i]*dr[i]*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
+            #bb[j]+=2*np.pi*r[i]*dr[i]*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
+            #gb[j]+=2*np.pi*r[i]*dr[i]*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
+            if valid:
+                bb[j]+=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
+                gb[j]+=rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
+                L[j] +=rad*f[i,j]
+                L2[j]+=rad*f[i,j]
+            else:
+                bb[j]+=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
+                gb[j]+=rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
+                L[j] +=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
+            
             #bb[j]*=2*np.pi*r[i]*dr[i]
         
-    return (np.vstack([nu, gb]),np.vstack([nu, bb]), np.vstack([nu, L])) 
+    return (np.vstack([nu, gb]),np.vstack([nu, bb]), np.vstack([nu, L]),np.vstack([nu, L2])) 
     #return np.vstack([nu, (nu*2*np.pi*r*dr*f).sum(axis=0)])
 
 
@@ -261,6 +284,7 @@ def disk_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
     totfg=totf[0]
     totfb=totf[1]
     totft=totf[2]
+    totft2=totf[3]
     #totfg2=np.genfromtxt('gray_test')
     
 
@@ -275,6 +299,7 @@ def disk_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
     plt.plot(totfg[0], totfg[0]*totfg[1])
     plt.plot(totfb[0], totfb[0]*totfb[1])
     plt.plot(totft[0], totft[0]*totft[1])
+    plt.plot(totft2[0], totft2[0]*totft2[1])
     #plt.plot(totfg2[:,0], totfg2[:,0]*totfg2[:,1])
     #plt.show()
     return fig

@@ -61,13 +61,25 @@ def Chi(es):
 def F(tp, teff, qg):
     return teff-tp*(Chi(es(tp, qg)))**0.25
 
+
+# def bb(freq, Tb, fcol=2):
+#     if np.isinf(np.exp(h*freq/kb/fcol/10**Tb)):
+#         return 0
+#     try:
+#         return (2./fcol**4)*(h*(freq**3)/c/c)/(np.exp(h*freq/kb/fcol/Tb)-1)
+#     except:
+#         return 0
+   
 #Standard blacbody
 def bb(nu, t):
     # kes=0.4
     # h =6.63*10.**-27;
     # kb=1.38*10**-16
     # c=3.*10**10
-    return 2*h*nu**3/c**2/(np.exp(h*nu/(kb*t))-1)
+    try:
+        return 2*h*nu**3/c**2/(np.exp(h*nu/(kb*t))-1)
+    except:
+        return 0
 
 #Calculates the graybody flux for a given effective temperature and gravity parameter
 def gb(nu, teff, qg):
