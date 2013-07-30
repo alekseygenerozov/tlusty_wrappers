@@ -16,7 +16,7 @@ import graybody as gray
 
 
 
-#Defining physical constants
+# #Defining physical constants
 c=3*10**10
 h=6.67*10**-27
 kb=1.38*10**-16
@@ -154,7 +154,6 @@ def construct_table(models, logi=False):
     spec=np.array(spec)
 
     if logi:
-        print 'test'
         spec[:, 1]=np.log10(spec[:, 1])
         spec=np.array(spec)
     else:
@@ -170,11 +169,15 @@ def get_params(file):
 
 
 ##Use table construct spectra from list of parameters
-def params_to_spec(params, table, linear=False, logi=False):
+def params_to_spec(params, table, method='', logi=False):
     # method='cubic'
     # if linear:
     #     method='linear'
-    grid2=griddata(table[0], table[1], params)
+    if method:
+        print method
+        grid2=griddata(table[0], table[1], params, method=method)
+    else:
+        grid2=griddata(table[0], table[1], params)
     #grid2=ma.array(grid2)
     good=np.empty(len(grid2), dtype=bool)
     for i in range(len(grid2)):
@@ -232,7 +235,7 @@ def sum_spec(r, specs, Teff, Qg):
 
 
 ##Compares tlusty spectrum to one that is interpolated from a table 
-def test_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
+def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     if table==[]:
         table=construct_table(tablef, logi=logi)
     #print table[0]
@@ -245,7 +248,7 @@ def test_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
     params=params[::2]
     
 
-    testspec2=params_to_spec([params], table, linear=linear, logi=logi)
+    testspec2=params_to_spec([params], table, method=method, logi=logi)
     testspec2=testspec2[0]
 
     fig=plt.figure()
@@ -254,7 +257,7 @@ def test_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
     plt.xlabel(r"$\nu$ [hz]")
     plt.ylabel(r"$\nu F_{\nu}$ [$ergs s^{-1} cm^{-2}$ ]")
     plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
-    plt.title(params_s)
+    plt.title(r'%s'%params_s)
     
     plt.plot(testspec[0], testspec[0]*testspec[1])
     plt.plot(testspec2[0], testspec2[0]*testspec2[1])
@@ -264,16 +267,15 @@ def test_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
 
 
 # Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, table=[], tablef='tmpd', linear=False, logi=False):
+def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
     #Construct table
     if table==[]:
         table=construct_table(tablef, logi=logi)
-    print f
     bin_params=np.fromfile(f, dtype=float, sep=' ',count=3)
     disk_params=np.genfromtxt(f, skip_header=1)
 
 
-    specs=params_to_spec(disk_params[:, 2::2], table, linear=linear, logi=logi)
+    specs=params_to_spec(disk_params[:, 2::2], table, method=method, logi=logi)
 
     r=disk_params[:, 0:2]
     Teff=disk_params[:, 2]
@@ -317,9 +319,9 @@ def main():
     parser.add_argument('-tf', '--tablefile',
         help='name of file containing list of table models',
         default='tmpd')
-    # parser.add_argument('-l', '--linear',
-    #     help='Specify order of interpolation should be linear for table',
-    #     action='store_true')
+    parser.add_argument('-m', '--method',
+        help='Specify order of interpolation should be linear for table',
+        choices=['linear', 'cubic', 'nearest'])
     parser.add_argument('-li', '--logi',
         help='Specifies that the interpolation should be done in terms of log intensity instead of brightness temp.',
         action='store_true')
@@ -327,8 +329,7 @@ def main():
     args=parser.parse_args()
     f=args.file
     d=args.dir
-    #linear=args.linear
-    linear=False
+    method=args.method
     tablef=args.tablefile
     logi=args.logi
 
@@ -340,7 +341,7 @@ def main():
         param_files=np.genfromtxt(f, dtype=str)
         for pf in param_files:
             print param_files
-            fig=disk_spec(pf, table=table, tablef=tablef, linear=linear)
+            fig=disk_spec(pf, table=table, tablef=tablef, method=method)
             pdf_pages.savefig(fig)
         pdf_pages.close()
     elif d:
@@ -350,7 +351,7 @@ def main():
         # table=construct_table(tablef, logi=logi)
         for m in process.stdout.readlines():
             m=m.rstrip()
-            fig=test_spec('./'+d+'/'+m, table=table, tablef=tablef, linear=linear, logi=logi)
+            fig=test_spec('./'+d+'/'+m, table=table, tablef=tablef, method=method, logi=logi)
             #Save file 
             pdf_pages.savefig(fig)
 

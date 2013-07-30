@@ -72,10 +72,6 @@ def F(tp, teff, qg):
    
 #Standard blacbody
 def bb(nu, t):
-    # kes=0.4
-    # h =6.63*10.**-27;
-    # kb=1.38*10**-16
-    # c=3.*10**10
     try:
         return 2*h*nu**3/c**2/(np.exp(h*nu/(kb*t))-1)
     except:
@@ -86,7 +82,10 @@ def gb(nu, teff, qg):
     tp=fsolve(F, teff, args=(teff, qg))[0]
     es1=es(tp, qg)
     eps1=eps(es1, tp, nu)
-    return 2*np.pi*eps1**0.5/(1+eps1**0.5)*bb( nu, tp)
+    try:
+        return 2*np.pi*eps1**0.5/(1+eps1**0.5)*bb( nu, tp)
+    except:
+        return 0
 
 
 
