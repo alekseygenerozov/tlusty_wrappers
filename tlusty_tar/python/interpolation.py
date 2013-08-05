@@ -13,10 +13,13 @@ import argparse
 import subprocess
 
 import graybody as gray
+import warnings
+
+import shlex
 
 
 
-# #Defining physical constants
+##Defining physical constants
 c=3*10**10
 h=6.67*10**-27
 kb=1.38*10**-16
@@ -55,16 +58,17 @@ def parse_file(f):
 def get_spec(file, nfreq=300, mu=-1, nmu=10):
     #Read file assumed to be in the format of tlusty uni 14 file. File has lines with wavelengths and h followed by blocks with 
     #intensities and polariztions
-    spec=np.genfromtxt(file, skip_header=1, invalid_raise=False)
-    wlh=np.genfromtxt(file, invalid_raise=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        spec=np.genfromtxt(file, skip_header=1, invalid_raise=False)
+        wlh=np.genfromtxt(file, invalid_raise=False)
     
     spec=spec.flatten()
     wlh=wlh.flatten()
-    
+    #Skip over fluxes and polarizations
     spec=spec[::2]
     wl=wlh[::2]
 
-    
     #mu is and index for the polar angle to use. -1 corresponds to returning emergent flux from the disk
     if mu == -1:
         h=wlh[1::2]
@@ -103,7 +107,6 @@ def Tb(freq, intens, fcol=2):
     return np.log10(h*freq/kb/fcol/np.log(1+(2*h*freq**3/fcol**4/intens/c/c)))
 
 
-
 # Invert brightness temperature to obtain the intensity
 def Tb_inv(freq, Tb, fcol=2):
     if np.isinf(np.exp(h*freq/kb/fcol/10**Tb)):
@@ -112,7 +115,6 @@ def Tb_inv(freq, Tb, fcol=2):
         return (2./fcol**4)*(h*(freq**3)/c/c)/(np.exp(h*freq/kb/fcol/10**Tb)-1)
     except:
         return 0
-   
 
     
 # Get brightness temperature from a spectrum, with default color correction factor of 2 as described in ApJS 164 530D
@@ -238,32 +240,42 @@ def sum_spec(r, specs, Teff, Qg):
 def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     if table==[]:
         table=construct_table(tablef, logi=logi)
-    #print table[0]
+    #Read tlusty spectrum from file. 
     testspec=get_spec(f)
     testspec=regrid(testspec)
     
+    #Construct interpolated spectrum for the params corresponding to file.
     params=parse_file(f)
     params_s='t'+str(10*params[0])+'m'+str(10*params[1])+'q'+str(10*params[2])
     print params
     params=params[::2]
-    
+    testspec_interp=params_to_spec([params], table, method=method, logi=logi)
+    testspec_interp=testspec_interp[0]
 
-    testspec2=params_to_spec([params], table, method=method, logi=logi)
-    testspec2=testspec2[0]
-
+    #Construct figure, comparing the interpolated spectrum to that directly computed from TLUSTY. 
     fig=plt.figure()
     plt.loglog()
-    #plt.figsize(20, 8) 
     plt.xlabel(r"$\nu$ [hz]")
-    plt.ylabel(r"$\nu F_{\nu}$ [$ergs s^{-1} cm^{-2}$ ]")
+    plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
     plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
     plt.title(r'%s'%params_s)
-    
+    #plt.plot(diff[0], diff[1])
     plt.plot(testspec[0], testspec[0]*testspec[1])
-    plt.plot(testspec2[0], testspec2[0]*testspec2[1])
-    #plt.savefig(params_s+'.pdf')
-    return fig
-    #plt.show()
+    plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
+    #plt.plot(testspec[0], 1.1*testspec[0]*testspec[1])
+    #plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
+    if np.any(np.isnan(testspec_interp)):
+        print "Warning -- unable to interpolate spectrum for specified parameters."
+        return [fig, -1]
+    #Finding max fractional deviation of the interpolated spectrum from the tlusty spectrum.
+    peak=np.max(testspec[1])
+    cut=testspec[1]>0.01*peak
+
+    #Comparing the tlusty and interpolated spectra
+    compare=[testspec[0,cut],(testspec_interp[1,cut])/(testspec[1,cut])]
+    args=np.argsort(np.abs(compare[1]-1))
+    max_deviation=compare[1][args[-1]]
+    return [fig, max_deviation]
 
 
 # Calculates a composite disk spectrum given an file containing input radial parameters.
@@ -316,6 +328,9 @@ def main():
     parser.add_argument('-d', '--dir',
         help='directory containing the location of models to test',
         default='')
+    parser.add_argument('-sf', '--skip',
+        help='in case d argument is used this can be used to specify file name containing the names of models to be skipped',
+        default='')
     parser.add_argument('-tf', '--tablefile',
         help='name of file containing list of table models',
         default='tmpd')
@@ -325,6 +340,9 @@ def main():
     parser.add_argument('-li', '--logi',
         help='Specifies that the interpolation should be done in terms of log intensity instead of brightness temp.',
         action='store_true')
+    # parser.add_argument('-a', '--animate',
+    #     help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.'
+    #     a)
 
     args=parser.parse_args()
     f=args.file
@@ -332,30 +350,54 @@ def main():
     method=args.method
     tablef=args.tablefile
     logi=args.logi
-
-    
-   
+    skip=args.skip
+  
     if f:
         table=construct_table(tablef, logi=logi)
         pdf_pages = PdfPages('composite.pdf')
         param_files=np.genfromtxt(f, dtype=str)
         for pf in param_files:
-            print param_files
+            #print param_files
             fig=disk_spec(pf, table=table, tablef=tablef, method=method)
             pdf_pages.savefig(fig)
         pdf_pages.close()
     elif d:
         table=construct_table(tablef, logi=logi)
         pdf_pages = PdfPages('interp_test.pdf')
-        process=bash_command('ls '+d)
-        # table=construct_table(tablef, logi=logi)
-        for m in process.stdout.readlines():
+        process=bash_command('echo '+d+'/*14')
+
+        bash_command('rm interp_log')
+        logfile=open('interp_log', 'a')
+
+        deviation_list=np.empty(0)
+        models=process.stdout.readlines()[0]
+        models=shlex.split(models)
+        if skip:
+            skip_models=np.genfromtxt(d+'/'+skip, dtype=str)
+            models=np.setdiff1d(models, skip_models)
+        params=np.array(map(tr.parse_file, files))
+        params=map(tr.parse_file, files)
+        params=np.array(params)
+        teffs=params[:,0]
+        order=np.argsort(teffs)
+
+        models[order]
+        for m in models:
             m=m.rstrip()
-            fig=test_spec('./'+d+'/'+m, table=table, tablef=tablef, method=method, logi=logi)
+            spec=test_spec(m, table=table, tablef=tablef, method=method, logi=logi)
+            fig=spec[0]
+            deviation=spec[1]
+            logfile.write(m+" "+str(deviation)+"\n")
+            if deviation!=-1:
+                deviation_list=np.append(deviation_list,deviation)
             #Save file 
             pdf_pages.savefig(fig)
 
+        print deviation_list
         pdf_pages.close()
+        fig2=plt.figure()
+        plt.hist(deviation_list, bins=50, normed=1)
+        fig2.savefig('dev_hist.pdf')
     else:
         parser.print_help()
 
