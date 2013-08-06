@@ -274,7 +274,7 @@ def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     #plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
     if np.any(np.isnan(testspec_interp)):
         print "Warning -- unable to interpolate spectrum for specified parameters."
-        return [testspec_interp[0], testspec_interp[0]*testspec_interp[1], -1]
+        return [testspec[0], testspec[0]*testspec[1], -1]
     #Finding max fractional deviation of the interpolated spectrum from the tlusty spectrum.
     peak=np.max(testspec[1])
     cut=testspec[1]>0.01*peak
@@ -283,7 +283,8 @@ def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     compare=[testspec[0,cut],(testspec_interp[1,cut])/(testspec[1,cut])]
     args=np.argsort(np.abs(compare[1]-1))
     max_deviation=compare[1][args[-1]]
-    return [testspec_interp[0], testspec_interp[0]*testspec_interp[1], max_deviation]
+    plt.close()
+    return [testspec[0], testspec[0]*testspec[1], max_deviation]
 
 
 # Calculates a composite disk spectrum given an file containing input radial parameters.
@@ -391,36 +392,40 @@ def main():
         models=np.array(models, dtype=str)
         models[order]
 
-        fig, ax=plt.subplots()
+        models=models[0:15]
+
+        #fig, ax=plt.subplots()
+        fig2=plt.figure()
         plt.loglog()
         plt.xlabel(r"$\nu$ [hz]")
         plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
-        plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
 
-        tmpspec=(test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[1])
-        nu=test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[0]
-        spec_plot,=ax.plot(nu, tmpspec)
+        #tmpspec=test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[1]
+        #nu=test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[0]
+        #spec_plot,=ax.plot(nu, tmpspec)
 
-        spec=[]
+        ims=[]
         print len(models)
-        for m in models:
+        for i in range(4):
+            m=models[i]
             m=m.rstrip()
-            spec.append(test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[1])
-            nu=test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[1]
-            #ims.append((plt.plot(x, y)),)
+            spec=test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[1]
+            nu=  test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[0]
+
+            ims.append((plt.plot(nu, spec)),)
             
             # deviation=spec[-1]
             # logfile.write(m+" "+str(deviation)+"\n")
             # if deviation!=-1:
             #     deviation_list=np.append(deviation_list,deviation) 
-        spec=np.array(spec)
-        print spec[0]
-        print spec.shape
-        #pdf_pages.close()
-        def update_img(n):
-            spec_plot.set_ydata(spec[n])
-            #spec_plot.set_xdata(nu)
-            return spec_plot
+        # spec=np.array(spec)
+        # print spec[0]
+        # print spec.shape
+        # #pdf_pages.close()
+        # def update_img(n):
+        #     spec_plot.set_ydata(spec[n])
+        #     spec_plot.set_xdata(nu)
+        #     return spec_plot
 
 
         #Deviation histogram
@@ -428,12 +433,11 @@ def main():
         # plt.hist(deviation_list, bins=50, normed=1)
         # fig2.savefig('dev_hist.pdf')
 
-        ani = animation.FuncAnimation(fig,update_img,len(spec),interval=1)
-        writer = animation.writers['ffmpeg'](fps=10) 
-        #im_ani = animation.ArtistAnimation(fig3, ims, interval=1, repeat_delay=3000,
-
-        #plt.show()
-        ani.save('test.mp4',writer=writer,dpi=100)
+        # ani = animation.FuncAnimation(fig,update_img,len(spec),interval=1)
+        # writer = animation.writers['ffmpeg'](fps=10) 
+        im_ani = animation.ArtistAnimation(fig2, ims, interval=50, repeat_delay=3000,
+            blit=True)
+        im_ani.save('im.mp4')
     else:
         parser.print_help()
 
