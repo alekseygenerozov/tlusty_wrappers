@@ -8,14 +8,20 @@ import re
 from matplotlib import rc
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.animation as animation
 
 import argparse
 import subprocess
 
 import graybody as gray
+import tlusty_runs as tr
+
+
 import warnings
 
 import shlex
+
+from types import *
 
 
 
@@ -253,20 +259,22 @@ def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     testspec_interp=testspec_interp[0]
 
     #Construct figure, comparing the interpolated spectrum to that directly computed from TLUSTY. 
-    fig=plt.figure()
+    fig,ax=plt.subplots()
     plt.loglog()
     plt.xlabel(r"$\nu$ [hz]")
     plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
     plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
     plt.title(r'%s'%params_s)
     #plt.plot(diff[0], diff[1])
-    plt.plot(testspec[0], testspec[0]*testspec[1])
-    plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
+    ax.plot(testspec[0], testspec[0]*testspec[1])
+    ax.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
+
+
     #plt.plot(testspec[0], 1.1*testspec[0]*testspec[1])
     #plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
     if np.any(np.isnan(testspec_interp)):
         print "Warning -- unable to interpolate spectrum for specified parameters."
-        return [fig, -1]
+        return [testspec_interp[0], testspec_interp[0]*testspec_interp[1], -1]
     #Finding max fractional deviation of the interpolated spectrum from the tlusty spectrum.
     peak=np.max(testspec[1])
     cut=testspec[1]>0.01*peak
@@ -275,7 +283,7 @@ def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     compare=[testspec[0,cut],(testspec_interp[1,cut])/(testspec[1,cut])]
     args=np.argsort(np.abs(compare[1]-1))
     max_deviation=compare[1][args[-1]]
-    return [fig, max_deviation]
+    return [testspec_interp[0], testspec_interp[0]*testspec_interp[1], max_deviation]
 
 
 # Calculates a composite disk spectrum given an file containing input radial parameters.
@@ -340,9 +348,9 @@ def main():
     parser.add_argument('-li', '--logi',
         help='Specifies that the interpolation should be done in terms of log intensity instead of brightness temp.',
         action='store_true')
-    # parser.add_argument('-a', '--animate',
-    #     help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.'
-    #     a)
+    parser.add_argument('-a', '--animate',
+        help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.',
+        action='store_true')
 
     args=parser.parse_args()
     f=args.file
@@ -351,6 +359,7 @@ def main():
     tablef=args.tablefile
     logi=args.logi
     skip=args.skip
+    animate=args.animate
   
     if f:
         table=construct_table(tablef, logi=logi)
@@ -363,7 +372,7 @@ def main():
         pdf_pages.close()
     elif d:
         table=construct_table(tablef, logi=logi)
-        pdf_pages = PdfPages('interp_test.pdf')
+        #pdf_pages = PdfPages('interp_test.pdf')
         process=bash_command('echo '+d+'/*14')
 
         bash_command('rm interp_log')
@@ -375,29 +384,56 @@ def main():
         if skip:
             skip_models=np.genfromtxt(d+'/'+skip, dtype=str)
             models=np.setdiff1d(models, skip_models)
-        params=np.array(map(tr.parse_file, files))
-        params=map(tr.parse_file, files)
-        params=np.array(params)
+
+        params=np.array(map(tr.parse_file, models))
         teffs=params[:,0]
         order=np.argsort(teffs)
-
+        models=np.array(models, dtype=str)
         models[order]
+
+        fig, ax=plt.subplots()
+        plt.loglog()
+        plt.xlabel(r"$\nu$ [hz]")
+        plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
+        plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
+
+        tmpspec=(test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[1])
+        nu=test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[0]
+        spec_plot,=ax.plot(nu, tmpspec)
+
+        spec=[]
+        print len(models)
         for m in models:
             m=m.rstrip()
-            spec=test_spec(m, table=table, tablef=tablef, method=method, logi=logi)
-            fig=spec[0]
-            deviation=spec[1]
-            logfile.write(m+" "+str(deviation)+"\n")
-            if deviation!=-1:
-                deviation_list=np.append(deviation_list,deviation)
-            #Save file 
-            pdf_pages.savefig(fig)
+            spec.append(test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[1])
+            nu=test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[1]
+            #ims.append((plt.plot(x, y)),)
+            
+            # deviation=spec[-1]
+            # logfile.write(m+" "+str(deviation)+"\n")
+            # if deviation!=-1:
+            #     deviation_list=np.append(deviation_list,deviation) 
+        spec=np.array(spec)
+        print spec[0]
+        print spec.shape
+        #pdf_pages.close()
+        def update_img(n):
+            spec_plot.set_ydata(spec[n])
+            #spec_plot.set_xdata(nu)
+            return spec_plot
 
-        print deviation_list
-        pdf_pages.close()
-        fig2=plt.figure()
-        plt.hist(deviation_list, bins=50, normed=1)
-        fig2.savefig('dev_hist.pdf')
+
+        #Deviation histogram
+        # fig2=plt.figure()
+        # plt.hist(deviation_list, bins=50, normed=1)
+        # fig2.savefig('dev_hist.pdf')
+
+        ani = animation.FuncAnimation(fig,update_img,len(spec),interval=1)
+        writer = animation.writers['ffmpeg'](fps=10) 
+        #im_ani = animation.ArtistAnimation(fig3, ims, interval=1, repeat_delay=3000,
+
+        #plt.show()
+        ani.save('test.mp4',writer=writer,dpi=100)
     else:
         parser.print_help()
 
