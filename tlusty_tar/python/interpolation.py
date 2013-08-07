@@ -156,7 +156,7 @@ def construct_table(models, logi=False):
     params=np.array(params)
     params=params[:, ::2]
     
-    spec=map(get_spec, models)
+    spec=map(get_spec, models, np.fltarr(300))
     spec=np.array(spec)
     spec=map(regrid, spec)
     spec=np.array(spec)
@@ -178,28 +178,20 @@ def get_params(file):
 
 ##Use table construct spectra from list of parameters
 def params_to_spec(params, table, method='', logi=False):
-    # method='cubic'
-    # if linear:
-    #     method='linear'
     if method:
         print method
         grid2=griddata(table[0], table[1], params, method=method)
     else:
         grid2=griddata(table[0], table[1], params)
-    #grid2=ma.array(grid2)
     good=np.empty(len(grid2), dtype=bool)
     for i in range(len(grid2)):
-        #print np.any(np.isnan(grid2[i]))
         if np.any(np.isnan(grid2[i])):
             continue
-            #grid2[i]=ma.masked
         elif logi:
             grid2[i,1]=10.**grid2[i,1]
-            #good[i]=True
         else:
-            #print params[i]
             grid2[i]=bright_inv(grid2[i])
-            #good[i]=True
+
     
     #Return the interpolated spectra for parameters within our grid
     return grid2
@@ -238,9 +230,8 @@ def sum_spec(r, specs, Teff, Qg):
             
             #bb[j]*=2*np.pi*r[i]*dr[i]
         
-    return (np.vstack([nu, gb]),np.vstack([nu, bb]), np.vstack([nu, L]),np.vstack([nu, L2])) 
+    return (nu, gb, bb, L, L2) 
     #return np.vstack([nu, (nu*2*np.pi*r*dr*f).sum(axis=0)])
-
 
 ##Compares tlusty spectrum to one that is interpolated from a table 
 def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
@@ -327,19 +318,16 @@ def animate_test_spec(models, table=[], tablef='tmpd', method='', logi=False):
 
 
 
-
-
-
-# Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
-
-    #Construct table
+## Calculates a composite disk spectrum given an file containing input radial parameters.
+def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, individual=False):
+    #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
+
+    #Read in disk parameters, assumes header contains binary parameters
     bin_params=np.fromfile(f, dtype=float, sep=' ',count=3)
     disk_params=np.genfromtxt(f, skip_header=1)
-
-
+    #Getting spectra for all of the different annuli
     specs=params_to_spec(disk_params[:, 2::2], table, method=method, logi=logi)
 
     r=disk_params[:, 0:2]
@@ -348,27 +336,39 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
 
     #Finding the total flux
     totf=sum_spec(r, specs, Teff, Qg)
-    totfg=totf[0]
-    totfb=totf[1]
-    totft=totf[2]
-    totft2=totf[3]
-    #totfg2=np.genfromtxt('gray_test')
+    nu=totf[0]
+    totfg=totf[1]
+    totfb=totf[2]
+    #Sum of tlusty spectra: second one adds blackbodies for annuli which fall outside of the table
+    totft=totf[3]
+    totft2=totf[4]
     
-
-    fig=plt.figure()
+    fig,ax=plt.subplots(2, sharex=True)
     plt.loglog()
-    #plt.figsize(20, 8)
-    plt.xlabel(r"$\nu$ [hz]")
-    plt.ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
-    plt.axis([10.**14, 2*10.**18, 10.**38, 10.**45]) 
-    plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+    plt.tight_layout()
+    #plt.xlabel(r"$\nu$ [hz]")
+    #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
 
-    plt.plot(totfg[0], totfg[0]*totfg[1])
-    plt.plot(totfb[0], totfb[0]*totfb[1])
-    plt.plot(totft[0], totft[0]*totft[1])
-    plt.plot(totft2[0], totft2[0]*totft2[1])
-    #plt.plot(totfg2[:,0], totfg2[:,0]*totfg2[:,1])
-    #plt.show()
+    ax[0].set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
+    ax[0].set_xlim(10.**14, 2*10.**18)
+    ax[0].set_ylim(10.**38, 10.**45)
+    ax[0].set_xscale('log')
+    ax[0].set_yscale('log')
+    ax[0].plot(nu, totfg*nu)
+    ax[0].plot(nu, totfb*nu)
+    ax[0].plot(nu, totft*nu)
+    ax[0].plot(nu, totft2*nu)
+
+
+    if individual:
+        ax[1].set_xlim(10.**14, 2*10.**18)
+        ax[1].set_ylim(10.**6, 10.**16)
+        ax[1].set_ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$]")
+        ax[1].set_xscale('log')
+        ax[1].set_yscale('log')
+        for s in range(len(specs)):
+            ax[1].plot(specs[s,0], specs[s,0]*specs[s,1])
+
     return fig
 
 def main():
@@ -411,7 +411,7 @@ def main():
         param_files=np.genfromtxt(f, dtype=str)
         for pf in param_files:
             #print param_files
-            fig=disk_spec(pf, table=table, tablef=tablef, method=method)
+            fig=disk_spec(pf, table=table, tablef=tablef, method=method, individual=True)
             pdf_pages.savefig(fig)
         pdf_pages.close()
     elif d:
