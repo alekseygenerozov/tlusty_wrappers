@@ -15,13 +15,9 @@ import subprocess
 
 import graybody as gray
 import tlusty_runs as tr
-
-
 import warnings
 
 import shlex
-
-from types import *
 
 
 
@@ -42,8 +38,8 @@ def get_freq(w):
     return c*10**8/w
 
 
-# Function to parse file name in order to get list of parameters
-def parse_file(f):
+# Function to parse file name in order to get list of parameters.
+def parse_file(f, string=False):
     f2=re.sub('.14\Z', '', f)
     refloat =r'[+-]?\d+\.?\d*'
     t=re.search("t"+refloat,f2)
@@ -55,10 +51,14 @@ def parse_file(f):
     q=re.search("q"+refloat,f2)
     q=re.search(refloat,q.group(0))
     
+    if string:
+        params=(t.group(0), m.group(0), q.group(0))
+    else:
+        params=(float(t.group(0))/10., float(m.group(0))/10., float(q.group(0))/10.)
     
-    params=np.array([float(t.group(0)), float(m.group(0)), float(q.group(0))])
-    params=params/10.
     return params
+
+
 
 # Extract spectrum from unit 14 type output file, if mu  is set to -1 then get the flux
 def get_spec(file, nfreq=300, mu=-1, nmu=10):
@@ -258,37 +258,81 @@ def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     testspec_interp=params_to_spec([params], table, method=method, logi=logi)
     testspec_interp=testspec_interp[0]
 
-    #Construct figure, comparing the interpolated spectrum to that directly computed from TLUSTY. 
-    fig,ax=plt.subplots()
-    plt.loglog()
-    plt.xlabel(r"$\nu$ [hz]")
-    plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
-    plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
-    plt.title(r'%s'%params_s)
-    #plt.plot(diff[0], diff[1])
-    ax.plot(testspec[0], testspec[0]*testspec[1])
-    ax.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
-
-
+    # #Construct figure, comparing the interpolated spectrum to that directly computed from TLUSTY. 
+    # fig=plt.figure()
+    # plt.loglog()
+    # plt.xlabel(r"$\nu$ [hz]")
+    # plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
+    # plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
+    # plt.title(r'%s'%params_s)
+    # #plt.plot(diff[0], diff[1])
+    # plt.plot(testspec[0], testspec[0]*testspec[1])
+    # plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
     #plt.plot(testspec[0], 1.1*testspec[0]*testspec[1])
     #plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
     if np.any(np.isnan(testspec_interp)):
         print "Warning -- unable to interpolate spectrum for specified parameters."
-        return [testspec[0], testspec[0]*testspec[1], -1]
+        return [testspec[0], testspec[0]*testspec[1], testspec_interp[0]*testspec_interp[1]]
     #Finding max fractional deviation of the interpolated spectrum from the tlusty spectrum.
-    peak=np.max(testspec[1])
-    cut=testspec[1]>0.01*peak
+    # peak=np.max(testspec[1])
+    # cut=testspec[1]>0.01*peak
 
-    #Comparing the tlusty and interpolated spectra
-    compare=[testspec[0,cut],(testspec_interp[1,cut])/(testspec[1,cut])]
-    args=np.argsort(np.abs(compare[1]-1))
-    max_deviation=compare[1][args[-1]]
-    plt.close()
-    return [testspec[0], testspec[0]*testspec[1], max_deviation]
+    # #Comparing the tlusty and interpolated spectra
+    # compare=[testspec[0,cut],(testspec_interp[1,cut])/(testspec[1,cut])]
+    # args=np.argsort(np.abs(compare[1]-1))
+    # max_deviation=compare[1][args[-1]]
+    return [testspec[0], testspec[0]*testspec[1], testspec_interp[0]*testspec_interp[1]]
+
+
+#takes list of models creates animation of computed spectrum plus interpolated spectrum
+def animate_test_spec(models, table=[], tablef='tmpd', method='', logi=False):
+    def update_img(n):
+        spec_plot.set_ydata(spec[n])
+        spec_plot_interp.set_ydata(spec_interp[n])
+        label.set_text('log(teff)= '+str(teffs[n]))
+        return [spec_plot, spec_plot_interp]
+
+    fig, ax=plt.subplots()
+    plt.loglog()
+    plt.xlabel(r"$\nu$ [hz]")
+    plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
+    plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
+    label=ax.text(0.02, 0.95, '', transform=ax.transAxes)
+
+    (spec, spec_interp, teffs)=([],[],[])
+
+    nu=test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[0]
+    tmpspec=(test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[1])
+    tmpspec_interp=(test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[1])
+    spec_plot,=ax.plot(nu, tmpspec)
+    spec_plot_interp,=ax.plot(nu, tmpspec_interp)
+
+
+    (ts,ms,qs)=parse_file(models[0], True)
+    writer = animation.writers['ffmpeg'](fps=10) 
+    for m in models:
+        m=m.rstrip()
+        (ts2,ms2,qs2)=parse_file(m, True)
+        teffs.append(float(ts2)/10)
+        if not(ms2==ms) or not(qs2==qs):
+            print len(spec)
+            ani = animation.FuncAnimation(fig,update_img,len(spec),interval=50)
+            ani.save('interp_m'+ms+'_q'+qs+'.mp4',writer=writer,dpi=100)
+            (spec, spec_interp, teffs)=([],[],[])
+            (ms,qs)=(ms2,qs2)
+
+        #spec=test_spec(m, table=table, tablef=tablef, method=method, logi=logi) 
+        spec.append(test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[1])
+        spec_interp.append(test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[2])
+
+
+
+
 
 
 # Calculates a composite disk spectrum given an file containing input radial parameters.
 def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
+
     #Construct table
     if table==[]:
         table=construct_table(tablef, logi=logi)
@@ -349,9 +393,9 @@ def main():
     parser.add_argument('-li', '--logi',
         help='Specifies that the interpolation should be done in terms of log intensity instead of brightness temp.',
         action='store_true')
-    parser.add_argument('-a', '--animate',
-        help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.',
-        action='store_true')
+    # parser.add_argument('-a', '--animate',
+    #     help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.'
+    #     a)
 
     args=parser.parse_args()
     f=args.file
@@ -360,7 +404,6 @@ def main():
     tablef=args.tablefile
     logi=args.logi
     skip=args.skip
-    animate=args.animate
   
     if f:
         table=construct_table(tablef, logi=logi)
@@ -373,71 +416,67 @@ def main():
         pdf_pages.close()
     elif d:
         table=construct_table(tablef, logi=logi)
-        #pdf_pages = PdfPages('interp_test.pdf')
+        # pdf_pages = PdfPages('interp_test.pdf')
         process=bash_command('echo '+d+'/*14')
 
-        bash_command('rm interp_log')
-        logfile=open('interp_log', 'a')
+        # bash_command('rm interp_log')
+        # logfile=open('interp_log', 'a')
 
-        deviation_list=np.empty(0)
+        # deviation_list=np.empty(0)
         models=process.stdout.readlines()[0]
         models=shlex.split(models)
         if skip:
             skip_models=np.genfromtxt(d+'/'+skip, dtype=str)
             models=np.setdiff1d(models, skip_models)
-
-        params=np.array(map(tr.parse_file, models))
-        teffs=params[:,0]
-        order=np.argsort(teffs)
         models=np.array(models, dtype=str)
-        models[order]
-
-        models=models[0:15]
-
-        #fig, ax=plt.subplots()
-        fig2=plt.figure()
-        plt.loglog()
-        plt.xlabel(r"$\nu$ [hz]")
-        plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
-
-        #tmpspec=test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[1]
-        #nu=test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[0]
-        #spec_plot,=ax.plot(nu, tmpspec)
-
-        ims=[]
-        print len(models)
-        for i in range(4):
-            m=models[i]
-            m=m.rstrip()
-            spec=test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[1]
-            nu=  test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[0]
-
-            ims.append((plt.plot(nu, spec)),)
-            
-            # deviation=spec[-1]
-            # logfile.write(m+" "+str(deviation)+"\n")
-            # if deviation!=-1:
-            #     deviation_list=np.append(deviation_list,deviation) 
-        # spec=np.array(spec)
-        # print spec[0]
-        # print spec.shape
-        # #pdf_pages.close()
-        # def update_img(n):
-        #     spec_plot.set_ydata(spec[n])
-        #     spec_plot.set_xdata(nu)
-        #     return spec_plot
+        #Sort models used by teff, then m, and finally q
+        params=map(parse_file, models)
+        dtype=[('teff',float), ('m', float), ('q', float)]
+        params=np.array(params, dtype=dtype)
+        order=np.argsort(params, order=['q', 'm', 'teff'])
+        models=models[order]
 
 
-        #Deviation histogram
+        #Create animations comparing the interpolated spectra to tlusty spectra found in the specified directory
+        animate_test_spec(models, table=table, tablef=tablef, method=method, logi=logi)
+
+        
+        # for o in order:
+        #     params2=params[o]
+        #     print params2
+        #     diff=np.diff(params2[:, 0])
+        #     br=np.where((diff>10^-6)
+
+        #     print br
+
+            # print np.split(params2, br)
+        
+        #animate_test_spec(models, table=table, tablef=tablef, method=method, logi=logi)
+
+
+        # params=np.array(map(tr.parse_file, models))
+        # params=map(tr.parse_file, models)
+        # params=np.array(params)
+        # teffs=params[:,0]
+        # order=np.argsort(teffs)
+
+        # models[order]
+        # for m in models:
+        #     m=m.rstrip()
+        #     spec=test_spec(m, table=table, tablef=tablef, method=method, logi=logi)
+        #     fig=spec[0]
+        #     deviation=spec[1]
+        #     logfile.write(m+" "+str(deviation)+"\n")
+        #     if deviation!=-1:
+        #         deviation_list=np.append(deviation_list,deviation)
+        #     #Save file 
+        #     pdf_pages.savefig(fig)
+
+        # print deviation_list
+        # pdf_pages.close()
         # fig2=plt.figure()
         # plt.hist(deviation_list, bins=50, normed=1)
         # fig2.savefig('dev_hist.pdf')
-
-        # ani = animation.FuncAnimation(fig,update_img,len(spec),interval=1)
-        # writer = animation.writers['ffmpeg'](fps=10) 
-        im_ani = animation.ArtistAnimation(fig2, ims, interval=50, repeat_delay=3000,
-            blit=True)
-        im_ani.save('im.mp4')
     else:
         parser.print_help()
 
