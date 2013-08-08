@@ -74,37 +74,37 @@ def get_spec(file, nfreq=300, mu=-1, nmu=10):
     #Skip over fluxes and polarizations
     spec=spec[::2]
     wl=wlh[::2]
+    #Second moment of radiative intensity
+    h=wlh[1::2]
+    flux=4*np.pi*h
+    flux.shape=(300,1)
 
-    #mu is and index for the polar angle to use. -1 corresponds to returning emergent flux from the disk
-    if mu == -1:
-        h=wlh[1::2]
-        spec=4*np.pi*h
-        spec=np.vstack((wl, spec))        
-        return spec
-        
-    spec=spec.reshape(( nfreq, nmu))   
-    spec=spec[:, mu]
+    #Add flux to end of intensity arrays for every frequency
+    spec.shape=(nfreq, nmu)
+    spec=np.append(spec, flux, axis=1)
 
-    print np.shape(wl), np.shape(spec), f
-    
-    spec=np.vstack((wl,spec)) 
-    return spec
+    return (wl,spec) 
+
 
 
 # Regrid spectrum in wavelength space. Want all spectra to be on the same grid in wavelength space when we interpolate; In frequency the default limits for the 
 # the wavelength correspond to 2.4e14 and 5e19 Hz.
 def regrid(spec, wlo=0.06, whi=12400, nws=300):
     wgrid=np.log(wlo)+np.log(whi/wlo)*np.arange(0, nws)/(nws-1)
-    spec[0]=np.log(spec[0])
-    
-    newspec=griddata(spec[0], spec[1], wgrid, fill_value=1.e-36)
-    
+    newspec=griddata(np.log(spec[0]), spec[1], wgrid, fill_value=1.e-36)
+    newspec=newspec[::-1]
+
     wgrid=np.exp(wgrid)
     freq=map(get_freq, wgrid)
-    
     freq=freq[::-1]
-    newspec=newspec[::-1]
-    return np.vstack((freq, newspec))
+    
+    freq2=np.empty_like(newspec)
+    for i in range(len(freq2)):
+        freq2[i].fill(freq[i])
+    spec=np.vstack([freq2, newspec])
+    spec.shape=(2,300,11)
+
+    return spec
 
 
 
@@ -123,41 +123,39 @@ def Tb_inv(freq, Tb, fcol=2):
         return 0
 
     
-# Get brightness temperature from a spectrum, with default color correction factor of 2 as described in ApJS 164 530D
-# returns the log of the brightness temperature
-def bright_spec(spec, fcol=2):
-    freq=spec[0]
-    intens=spec[1]
-    farr=np.empty(len(freq))
-    farr.fill(fcol)
+# # Get brightness temperature from a spectrum, with default color correction factor of 2 as described in ApJS 164 530D
+# # returns the log of the brightness temperature
+# def bright_spec(spec, fcol=2):
+#     freq=spec[0]
+#     intens=spec[1]
+#     farr=np.empty(len(freq))
+#     farr.fill(fcol)
     
-    bright=map(Tb, freq, intens, farr)
-    return np.vstack((freq, bright))
+#     bright=map(Tb, freq, intens, farr)
+#     return np.vstack((freq, bright))
 
 
-# Invert brightness temperature to obtain the spectrum
-def bright_inv(spec_inv, fcol=2):
-    freq=spec_inv[0]
-    temp=spec_inv[1]
+# # Invert brightness temperature to obtain the spectrum
+# def bright_inv(spec_inv, fcol=2):
+#     freq=spec_inv[0]
+#     temp=spec_inv[1]
     
-    farr=np.empty(len(freq))
-    farr.fill(fcol)
+#     farr=np.empty(len(freq))
+#     farr.fill(fcol)
     
-    intens=map(Tb_inv, freq, temp, farr)
-    
-    spec=np.vstack((freq, intens))
-    return spec
+#     intens=map(Tb_inv, freq, temp, farr)
+#     spec=np.vstack((freq, intens))
+#     return spec
 
 
-# Constructing table of spectra from unit 14 files
+##Constructing table of spectra from unit 14 files
 def construct_table(models, logi=False):
     models=np.genfromtxt(models, dtype='string')
     params=map(parse_file,models)
     params=np.array(params)
     params=params[:, ::2]
     
-    spec=map(get_spec, models, np.fltarr(300))
-    spec=np.array(spec)
+    spec=map(get_spec, models)
     spec=map(regrid, spec)
     spec=np.array(spec)
 
@@ -165,7 +163,7 @@ def construct_table(models, logi=False):
         spec[:, 1]=np.log10(spec[:, 1])
         spec=np.array(spec)
     else:
-        spec=map(bright_spec, spec)
+        spec[:, 1]=map(Tb, spec[:,0],spec[:,1])
         spec=np.array(spec)
 
     return (params, spec)
@@ -177,27 +175,32 @@ def get_params(file):
 
 
 ##Use table construct spectra from list of parameters
-def params_to_spec(params, table, method='', logi=False):
+def params_to_spec(params, table, method='', logi=False, mu=-1):
+    intens=table[1]
+    #Interpolating based on table
     if method:
         print method
-        grid2=griddata(table[0], table[1], params, method=method)
+        grid2=griddata(table[0], intens[:,:,:,mu], params, method=method)
     else:
-        grid2=griddata(table[0], table[1], params)
+        grid2=griddata(table[0], intens[:,:,:,mu], params)
+
     good=np.empty(len(grid2), dtype=bool)
     for i in range(len(grid2)):
+        #print np.any(np.isnan(grid2[i]))
         if np.any(np.isnan(grid2[i])):
             continue
         elif logi:
+            print logi
             grid2[i,1]=10.**grid2[i,1]
         else:
-            grid2[i]=bright_inv(grid2[i])
+            grid2[i,1]=np.array(map(Tb_inv,grid2[i,0],grid2[i,1]))
 
     
     #Return the interpolated spectra for parameters within our grid
     return grid2
-    #return grid2[good]
 
-# Computes composite spectrum given array of radii, spectra. Also computes corresponding blackbody spectrum using list of Teff that are passed to the function
+
+##Computes composite spectrum given array of radii, spectra. Also computes corresponding blackbody spectrum using list of Teff that are passed to the function
 def sum_spec(r, specs, Teff, Qg):   
     dr=r[:, 0]
     r=r[:, 1]
@@ -216,8 +219,6 @@ def sum_spec(r, specs, Teff, Qg):
         valid=not np.any(np.isnan(specs[i]))
         rad=2*np.pi*r[i]*dr[i]
         for j in range(len(nu)):
-            #bb[j]+=2*np.pi*r[i]*dr[i]*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
-            #gb[j]+=2*np.pi*r[i]*dr[i]*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
             if valid:
                 bb[j]+=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
                 gb[j]+=rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
@@ -227,11 +228,8 @@ def sum_spec(r, specs, Teff, Qg):
                 bb[j]+=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
                 gb[j]+=rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
                 L[j] +=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
-            
-            #bb[j]*=2*np.pi*r[i]*dr[i]
-        
+
     return (nu, gb, bb, L, L2) 
-    #return np.vstack([nu, (nu*2*np.pi*r*dr*f).sum(axis=0)])
 
 ##Compares tlusty spectrum to one that is interpolated from a table 
 def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
@@ -249,29 +247,9 @@ def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     testspec_interp=params_to_spec([params], table, method=method, logi=logi)
     testspec_interp=testspec_interp[0]
 
-    # #Construct figure, comparing the interpolated spectrum to that directly computed from TLUSTY. 
-    # fig=plt.figure()
-    # plt.loglog()
-    # plt.xlabel(r"$\nu$ [hz]")
-    # plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
-    # plt.axis([10.**14, 2*10.**18, 10.**6, 10.**16])
-    # plt.title(r'%s'%params_s)
-    # #plt.plot(diff[0], diff[1])
-    # plt.plot(testspec[0], testspec[0]*testspec[1])
-    # plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
-    #plt.plot(testspec[0], 1.1*testspec[0]*testspec[1])
-    #plt.plot(testspec_interp[0], testspec_interp[0]*testspec_interp[1])
     if np.any(np.isnan(testspec_interp)):
         print "Warning -- unable to interpolate spectrum for specified parameters."
         return [testspec[0], testspec[0]*testspec[1], testspec_interp[0]*testspec_interp[1]]
-    #Finding max fractional deviation of the interpolated spectrum from the tlusty spectrum.
-    # peak=np.max(testspec[1])
-    # cut=testspec[1]>0.01*peak
-
-    # #Comparing the tlusty and interpolated spectra
-    # compare=[testspec[0,cut],(testspec_interp[1,cut])/(testspec[1,cut])]
-    # args=np.argsort(np.abs(compare[1]-1))
-    # max_deviation=compare[1][args[-1]]
     return [testspec[0], testspec[0]*testspec[1], testspec_interp[0]*testspec_interp[1]]
 
 
@@ -317,57 +295,50 @@ def animate_test_spec(models, table=[], tablef='tmpd', method='', logi=False):
         spec_interp.append(test_spec(m, table=table, tablef=tablef, method=method, logi=logi)[2])
 
 
-
-## Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, individual=False):
+##Calculates a composite disk spectrum given an file containing input radial parameters.
+def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
     #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
-
-    #Read in disk parameters, assumes header contains binary parameters
     bin_params=np.fromfile(f, dtype=float, sep=' ',count=3)
     disk_params=np.genfromtxt(f, skip_header=1)
-    #Getting spectra for all of the different annuli
-    specs=params_to_spec(disk_params[:, 2::2], table, method=method, logi=logi)
+    specs=params_to_spec(disk_params[:, 2::2], table, method=method, logi=logi, mu=-1)
 
     r=disk_params[:, 0:2]
     Teff=disk_params[:, 2]
     Qg=disk_params[:, 4]
 
-    #Finding the total flux
+    #Finding the total flux, for the given parameters
     totf=sum_spec(r, specs, Teff, Qg)
     nu=totf[0]
     totfg=totf[1]
     totfb=totf[2]
-    #Sum of tlusty spectra: second one adds blackbodies for annuli which fall outside of the table
     totft=totf[3]
     totft2=totf[4]
-    
-    fig,ax=plt.subplots(2, sharex=True)
-    plt.loglog()
-    plt.tight_layout()
-    #plt.xlabel(r"$\nu$ [hz]")
-    #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
 
+    fig,ax=plt.subplots(nrows=2, ncols=1, figsize=(6,8),sharex=True, subplot_kw=dict(adjustable='datalim'))
+    #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+    plt.xlabel(r"$\nu$ [hz]")
+
+    #Plotting the composite disk spectrum
     ax[0].set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
-    ax[0].set_xlim(10.**14, 2*10.**18)
+    ax[0].set_xlim(10.**14, 10.**17)
     ax[0].set_ylim(10.**38, 10.**45)
     ax[0].set_xscale('log')
     ax[0].set_yscale('log')
-    ax[0].plot(nu, totfg*nu)
-    ax[0].plot(nu, totfb*nu)
-    ax[0].plot(nu, totft*nu)
-    ax[0].plot(nu, totft2*nu)
+    
+    ax[0].plot(nu, nu*totfg)
+    ax[0].plot(nu, nu*totfb)
+    ax[0].plot(nu, nu*totft)
+    ax[0].plot(nu, nu*totft2)
 
-
-    if individual:
-        ax[1].set_xlim(10.**14, 2*10.**18)
-        ax[1].set_ylim(10.**6, 10.**16)
-        ax[1].set_ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$]")
-        ax[1].set_xscale('log')
-        ax[1].set_yscale('log')
-        for s in range(len(specs)):
-            ax[1].plot(specs[s,0], specs[s,0]*specs[s,1])
+    #Plotting the contributions of individual annuli
+    ax[1].set_ylim(10.**6, 10.**16)
+    ax[1].set_xlim(10.**14, 10.**17)
+    ax[1].set_xscale('log')
+    ax[1].set_yscale('log')
+    for i in range(len(specs)):
+        ax[1].plot(nu, specs[i, 1]*nu)
 
     return fig
 
@@ -404,6 +375,8 @@ def main():
     tablef=args.tablefile
     logi=args.logi
     skip=args.skip
+
+    print logi
   
     if f:
         table=construct_table(tablef, logi=logi)
@@ -411,7 +384,7 @@ def main():
         param_files=np.genfromtxt(f, dtype=str)
         for pf in param_files:
             #print param_files
-            fig=disk_spec(pf, table=table, tablef=tablef, method=method, individual=True)
+            fig=disk_spec(pf, table=table, tablef=tablef, method=method,logi=logi)
             pdf_pages.savefig(fig)
         pdf_pages.close()
     elif d:
