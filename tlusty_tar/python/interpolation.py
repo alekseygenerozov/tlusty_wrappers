@@ -22,9 +22,11 @@ import shlex
 
 
 ##Defining physical constants
+G=6.67*10**-8
 c=3*10**10
 h=6.67*10**-27
 kb=1.38*10**-16
+M_sun=2.*10**33
 
 
 ##Run a command from the bash shell
@@ -153,7 +155,7 @@ def construct_table(models, logi=False):
     models=np.genfromtxt(models, dtype='string')
     params=map(parse_file,models)
     params=np.array(params)
-    params=params[:, ::2]
+    #params=params[:, ::2]
     
     spec=map(get_spec, models)
     spec=map(regrid, spec)
@@ -201,13 +203,18 @@ def params_to_spec(params, table, method='', logi=False, mu=-1):
 
 
 ##Computes composite spectrum given array of radii, spectra. Also computes corresponding blackbody spectrum using list of Teff that are passed to the function
-def sum_spec(r, specs, Teff, Qg):   
-    dr=r[:, 0]
-    r=r[:, 1]
-    #print specs.shape
+def sum_spec(r, specs, Teff, Qg, M=10.**9): 
+    r=r*(G*M*M_sun/c**2)  
+    lr=np.log10(r)
+    #For now assuming a logarithmically evenly spaced grid--for simplicity
+    dlr=np.diff(lr)[0]
+    print dlr
+
+    dr={}
+    for i in range(len(lr)):
+        dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
     #Implicitly assuming that the first entry is not outside our grid -- not ideal!
     nu=specs[0,0]
-    #print nu
     f=specs[:, 1]
 
     L=np.zeros(len(nu))
@@ -218,12 +225,15 @@ def sum_spec(r, specs, Teff, Qg):
         #Check for any invalid entries -- these correspond to the parameters outside the edge of our table
         valid=not np.any(np.isnan(specs[i]))
         rad=2*np.pi*r[i]*dr[i]
+        #For every frequncy under consideration
         for j in range(len(nu)):
+            #If we have a valid interpolated spectrum...
             if valid:
                 bb[j]+=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
                 gb[j]+=rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
                 L[j] +=rad*f[i,j]
                 L2[j]+=rad*f[i,j]
+            #Otherwise...
             else:
                 bb[j]+=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
                 gb[j]+=rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
@@ -296,17 +306,16 @@ def animate_test_spec(models, table=[], tablef='tmpd', method='', logi=False):
 
 
 ##Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
+def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
     #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
-    bin_params=np.fromfile(f, dtype=float, sep=' ',count=3)
-    disk_params=np.genfromtxt(f, skip_header=1)
-    specs=params_to_spec(disk_params[:, 2::2], table, method=method, logi=logi, mu=-1)
+    disk_params=np.genfromtxt(f)#, skip_header=1)
+    specs=params_to_spec(disk_params[:, 1:4], table, method=method, logi=logi, mu=mu)
 
-    r=disk_params[:, 0:2]
-    Teff=disk_params[:, 2]
-    Qg=disk_params[:, 4]
+    r=disk_params[:, 0]
+    Teff=disk_params[:, 1]
+    Qg=disk_params[:, 3]
 
     #Finding the total flux, for the given parameters
     totf=sum_spec(r, specs, Teff, Qg)
@@ -323,7 +332,7 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
     #Plotting the composite disk spectrum
     ax[0].set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
     ax[0].set_xlim(10.**14, 10.**17)
-    ax[0].set_ylim(10.**38, 10.**45)
+    ax[0].set_ylim(10.**40, 10.**47)
     ax[0].set_xscale('log')
     ax[0].set_yscale('log')
     
@@ -333,12 +342,12 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
     ax[0].plot(nu, nu*totft2)
 
     #Plotting the contributions of individual annuli
-    ax[1].set_ylim(10.**6, 10.**16)
+    ax[1].set_ylim(10.**-5, 1.)
     ax[1].set_xlim(10.**14, 10.**17)
     ax[1].set_xscale('log')
     ax[1].set_yscale('log')
     for i in range(len(specs)):
-        ax[1].plot(nu, specs[i, 1]*nu)
+        ax[1].plot(nu, specs[i, 1])
 
     return fig
 
@@ -346,10 +355,14 @@ def main():
     parser=argparse.ArgumentParser(
         description='Either takes list of disk parameters and computes composite disk spectrum from table or compares spectra interpolated'+
           ' from table to those in a test directory')
-    parser.add_argument('-f', '--file',
+    parser.add_argument('-d', '--disk',
         help='file with list of files containing radial disk profiles ',
         default='')
-    parser.add_argument('-d', '--dir',
+    parser.add_argument('-mu', '--mu',
+        help='cosine of inslincation angle for the case of a disk ',
+        type=int,
+        default=-1)
+    parser.add_argument('-t', '--test',
         help='directory containing the location of models to test',
         default='')
     parser.add_argument('-sf', '--skip',
@@ -369,28 +382,29 @@ def main():
     #     a)
 
     args=parser.parse_args()
-    f=args.file
-    d=args.dir
+    t=args.test
+    d=args.disk
     method=args.method
     tablef=args.tablefile
     logi=args.logi
     skip=args.skip
+    mu=args.mu
 
     print logi
   
-    if f:
+    if d:
         table=construct_table(tablef, logi=logi)
         pdf_pages = PdfPages('composite.pdf')
-        param_files=np.genfromtxt(f, dtype=str)
+        param_files=np.genfromtxt(d, dtype=str)
         for pf in param_files:
             #print param_files
-            fig=disk_spec(pf, table=table, tablef=tablef, method=method,logi=logi)
+            fig=disk_spec(pf, table=table, tablef=tablef, method=method,logi=logi, mu=mu)
             pdf_pages.savefig(fig)
         pdf_pages.close()
-    elif d:
+    elif t:
         table=construct_table(tablef, logi=logi)
         # pdf_pages = PdfPages('interp_test.pdf')
-        process=bash_command('echo '+d+'/*14')
+        process=bash_command('echo '+t+'/*14')
 
         # bash_command('rm interp_log')
         # logfile=open('interp_log', 'a')
@@ -399,7 +413,7 @@ def main():
         models=process.stdout.readlines()[0]
         models=shlex.split(models)
         if skip:
-            skip_models=np.genfromtxt(d+'/'+skip, dtype=str)
+            skip_models=np.genfromtxt(t+'/'+skip, dtype=str)
             models=np.setdiff1d(models, skip_models)
         models=np.array(models, dtype=str)
         #Sort models used by teff, then m, and finally q
@@ -408,7 +422,6 @@ def main():
         params=np.array(params, dtype=dtype)
         order=np.argsort(params, order=['q', 'm', 'teff'])
         models=models[order]
-
 
         #Create animations comparing the interpolated spectra to tlusty spectra found in the specified directory
         animate_test_spec(models, table=table, tablef=tablef, method=method, logi=logi)
