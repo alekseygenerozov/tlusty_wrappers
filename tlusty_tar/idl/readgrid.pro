@@ -13,8 +13,8 @@ if n_elements(name) eq 0 then name='agngrid.save'
 ;
 if n_elements(save) gt 0 then begin
 ;
-if n_elements(wlo) eq 0 then wlo=0.06
-if n_elements(whi) eq 0 then whi=12400
+if n_elements(wlo) eq 0 then wlo=30.
+if n_elements(whi) eq 0 then whi=3.e5
 if n_elements(nws) eq 0 then nws=300
 if n_elements(fc) eq 0 then fc=2.0
 
@@ -33,18 +33,16 @@ nw0=500
 wl=fltarr(nw0)
 int0=fltarr(nw0,na)
 pol0=int0
-
-
-tl=5.0+findgen(26)*0.1
-ml=[2.0,2.25,2.5,2.75,3.0,4.0,5.0,6.0,7.0]
-ql=-5.0+findgen(17)
-tlab=['50','51','52','53','54','55','56','57','58','59','60','61','62', $
-      '63','64','65','66','67','68','69','70','71','72','73','74','75']
-;tlab=['60','61','62', $
-;      '63','64','65','66','67','68','69','70','71','72','73','74']
-mlab=['20','22','25','27','30','40','50','60','70']
-qlab=['-50','-40','-30','-20','-10','00','10','20','30','40','50','60','70','80','90','100','110']
-
+;
+tl=4.+findgen(13)*0.1
+ml=4.+findgen(3)
+ql=-12.+findgen(7)
+;
+tlab=['40','41','42','43','44','45','46','47','48','49',$
+      '50','51','52']
+mlab=['40','50','60']
+qlab=['-120','-110','-100','-90','-80','-70','-60']
+;
 
 int=fltarr(n_elements(tl),n_elements(ml),n_elements(ql),nws,na)
 pol=int

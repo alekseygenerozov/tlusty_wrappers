@@ -27,17 +27,17 @@ if n_elements(file) eq 0 then file='agnspec.save'
 if n_elements(restore) gt 0 then restore,file
 if n_elements(dirprg) eq 0 then dirprg='./'
 ;
-if n_elements(mass) eq 0 then mass=10.0
-if n_elements(mdot) eq 0 then mdot=3.9e-8
-if n_elements(angm) eq 0 then angm=0.0
-if n_elements(alpha) eq 0 then alpha=0.1
-if n_elements(mu) eq 0 then mu=0.34
+if n_elements(mass) eq 0 then mass=1.e9
+if n_elements(mdot) eq 0 then mdot=1.
+if n_elements(angm) eq 0 then angm=0.998
+if n_elements(alpha) eq 0 then alpha=0.01
+if n_elements(mu) eq 0 then mu=0.6
 if n_elements(rout) eq 0 then rout=0.
-if n_elements(tmin) eq 0 then tmin=1250000.
+if n_elements(tmin) eq 0 then tmin=9000.
 if n_elements(deltar) eq 0 then deltar=0.1
 if n_elements(nre) eq 0 then nre=0
 if n_elements(tlim) eq 0 then tlim=1000.
-if n_elements(frmax) eq 0 then frmax=1.e19
+if n_elements(frmax) eq 0 then frmax=1.e17
 if n_elements(plspec) eq 0 then plspec=1
 if n_elements(xh) eq 0 then xh=0.7
 if n_elements(fc) eq 0 then fc=1.0
@@ -118,7 +118,7 @@ free_lun,lun1
 ; -----------------------------------------------
 ;
 a=dirprg+'dispar3 <tmp.5 > tmp.6'
-spawn,a
+;spawn,a
 ;
 get_lun,lun1
 openr,lun1,'tmp.6'
