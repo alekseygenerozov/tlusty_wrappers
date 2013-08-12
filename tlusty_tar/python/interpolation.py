@@ -93,7 +93,7 @@ def get_spec(file, nfreq=300, mu=-1, nmu=10):
 # the wavelength correspond to 2.4e14 and 5e19 Hz.
 def regrid(spec, wlo=0.06, whi=12400, nws=300):
     wgrid=np.log(wlo)+np.log(whi/wlo)*np.arange(0, nws)/(nws-1)
-    newspec=griddata(np.log(spec[0]), spec[1], wgrid, fill_value=1.e-36)
+    newspec=griddata(np.log(spec[0]), spec[1], wgrid, fill_value=1.e-36,method='linear')
     newspec=newspec[::-1]
 
     wgrid=np.exp(wgrid)
@@ -350,10 +350,6 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
 
     # #Plotting the contributions of individual annuli
     nu=specs[0,0]
-    # if mu==-1:
-    #     ax[1].set_ylim(10.**6, 10.**16)
-    # else:
-    #     ax[1].set_ylim(10.**-5, 10.)
     ax[1].set_ylim(10.**-5, 10.)
     ax[1].set_xlim(10.**14, 10.**17)
     ax[1].set_xscale('log')
