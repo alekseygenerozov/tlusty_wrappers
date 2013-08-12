@@ -155,7 +155,7 @@ def construct_table(models, logi=False):
     models=np.genfromtxt(models, dtype='string')
     params=map(parse_file,models)
     params=np.array(params)
-    #params=params[:, ::2]
+    params=params[:, ::2]
     
     spec=map(get_spec, models)
     spec=map(regrid, spec)
@@ -203,7 +203,7 @@ def params_to_spec(params, table, method='', logi=False, mu=-1):
 
 
 ##Computes composite spectrum given array of radii, spectra. Also computes corresponding blackbody spectrum using list of Teff that are passed to the function
-def sum_spec(r, specs, Teff, Qg, M=10.**9): 
+def sum_spec(r, specs, Teff, Qg, M=10.**6): 
     r=r*(G*M*M_sun/c**2)  
     lr=np.log10(r)
     #For now assuming a logarithmically evenly spaced grid--for simplicity
@@ -248,6 +248,7 @@ def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     #Read tlusty spectrum from file. 
     testspec=get_spec(f)
     testspec=regrid(testspec)
+    testspec=testspec[:,:,-1]
     
     #Construct interpolated spectrum for the params corresponding to file.
     params=parse_file(f)
@@ -283,6 +284,7 @@ def animate_test_spec(models, table=[], tablef='tmpd', method='', logi=False):
     nu=test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[0]
     tmpspec=(test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[1])
     tmpspec_interp=(test_spec(models[0], table=table, tablef=tablef, method=method, logi=logi)[1])
+    print nu.shape,tmpspec.shape
     spec_plot,=ax.plot(nu, tmpspec)
     spec_plot_interp,=ax.plot(nu, tmpspec_interp)
 
@@ -310,15 +312,18 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
     #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
-    disk_params=np.genfromtxt(f)#, skip_header=1)
-    specs=params_to_spec(disk_params[:, 1:4], table, method=method, logi=logi, mu=mu)
+    M=np.fromfile(f, dtype=float, count=1, sep=' ')[0]
+    disk_params=np.genfromtxt(f, skip_header=1)
+    print disk_params[0]
+
+    specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi, mu=mu)
 
     r=disk_params[:, 0]
     Teff=disk_params[:, 1]
     Qg=disk_params[:, 3]
 
     #Finding the total flux, for the given parameters
-    totf=sum_spec(r, specs, Teff, Qg)
+    totf=sum_spec(r, specs, Teff, Qg, M=M)
     nu=totf[0]
     totfg=totf[1]
     totfb=totf[2]
@@ -326,26 +331,34 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
     totft2=totf[4]
 
     fig,ax=plt.subplots(nrows=2, ncols=1, figsize=(6,8),sharex=True, subplot_kw=dict(adjustable='datalim'))
-    #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+    # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
     plt.xlabel(r"$\nu$ [hz]")
 
-    #Plotting the composite disk spectrum
+    # #Plotting the composite disk spectrum
     ax[0].set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
     ax[0].set_xlim(10.**14, 10.**17)
-    ax[0].set_ylim(10.**40, 10.**47)
+    ax[0].set_ylim(10.**40, 10.**45)
     ax[0].set_xscale('log')
     ax[0].set_yscale('log')
     
-    ax[0].plot(nu, nu*totfg)
-    ax[0].plot(nu, nu*totfb)
-    ax[0].plot(nu, nu*totft)
-    ax[0].plot(nu, nu*totft2)
+    ax[0].plot(nu, nu*totfg, label='graybody')
+    ax[0].plot(nu, nu*totfb, label='blackbody')
+    ax[0].plot(nu, nu*totft, label='tlusty+bb')
+    ax[0].plot(nu, nu*totft2, label='tlusty')
+    handles, labels = ax[0].get_legend_handles_labels()
+    ax[0].legend(handles[::-1], labels[::-1])
 
-    #Plotting the contributions of individual annuli
-    ax[1].set_ylim(10.**-5, 1.)
+    # #Plotting the contributions of individual annuli
+    nu=specs[0,0]
+    # if mu==-1:
+    #     ax[1].set_ylim(10.**6, 10.**16)
+    # else:
+    #     ax[1].set_ylim(10.**-5, 10.)
+    ax[1].set_ylim(10.**-5, 10.)
     ax[1].set_xlim(10.**14, 10.**17)
     ax[1].set_xscale('log')
     ax[1].set_yscale('log')
+    ax[1].set_ylabel(r"$\nu$ F$_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$]")
     for i in range(len(specs)):
         ax[1].plot(nu, specs[i, 1])
 
@@ -356,7 +369,7 @@ def main():
         description='Either takes list of disk parameters and computes composite disk spectrum from table or compares spectra interpolated'+
           ' from table to those in a test directory')
     parser.add_argument('-d', '--disk',
-        help='file with list of files containing radial disk profiles ',
+        help='file containing list of disk profile files ',
         default='')
     parser.add_argument('-mu', '--mu',
         help='cosine of inslincation angle for the case of a disk ',
@@ -382,6 +395,7 @@ def main():
     #     a)
 
     args=parser.parse_args()
+    
     t=args.test
     d=args.disk
     method=args.method
@@ -389,16 +403,15 @@ def main():
     logi=args.logi
     skip=args.skip
     mu=args.mu
-
-    print logi
   
     if d:
         table=construct_table(tablef, logi=logi)
         pdf_pages = PdfPages('composite.pdf')
         param_files=np.genfromtxt(d, dtype=str)
-        for pf in param_files:
+        for i in range(len(param_files)):
             #print param_files
-            fig=disk_spec(pf, table=table, tablef=tablef, method=method,logi=logi, mu=mu)
+            fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi, mu=mu)
+            #fig.savefig('composite_'+str(i)+'.pdf')
             pdf_pages.savefig(fig)
         pdf_pages.close()
     elif t:
