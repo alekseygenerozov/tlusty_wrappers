@@ -14,7 +14,6 @@ def bash_command(cmd):
      process.wait()
      return process
 
-
 ##Routine to parse atmosphere
 def parse_atm(f='fort.7'):
     end=re.compile('fort.*')
@@ -42,7 +41,7 @@ def parse_atm(f='fort.7'):
     return atm
 
 
-#Checks atmospheric structures for density inversions greater than a certain threshold.
+##Checks atmospheric structures for density inversions greater than a certain threshold.
 def inv_check(atm, thres=1.e-2):
     dens=atm[:,3]
     diff=np.diff(dens)
@@ -59,7 +58,7 @@ def inv_check(atm, thres=1.e-2):
         return False
 
 
-## Function to parse file name in order to get list of parameters
+##Function to parse file name in order to get list of parameters
 def parse_file(f):
     refloat =r'[+-]?\d+\.?\d*'
     t=re.search("t"+refloat,f)
@@ -70,24 +69,22 @@ def parse_file(f):
     
     q=re.search("q"+refloat,f)
     q=re.search(refloat,q.group(0))
-    
-    
+
     params=np.array([float(t.group(0)), float(m.group(0)), float(q.group(0))])
     params=params/10.
+
     return params
 
 
-#Go from a list of parameters to corresponding string
+##Go from a list of parameters to corresponding string
 def reverse_parse(params):
-        #Format strings with info on teff, dmtot, qgrav for creating folder
-        t='{0:.5g}'.format(params[0]*10)
-        m='{0:.5g}'.format(params[1]*10)
-        q='{0:.5g}'.format(params[2]*10)
+    #Format strings with info on teff, dmtot, qgrav for creating folder
+    t='{0:.8g}'.format(params[0]*10)
+    m='{0:.8g}'.format(params[1]*10)
+    q='{0:.8g}'.format(params[2]*10)
 
-        f= 't' + t + 'm' + m + 'q' + q
-        return f
-
-
+    f= 't' + t + 'm' + m + 'q' + q
+    return f
 
 
 ##Setup input file for tlusty
@@ -104,7 +101,6 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
         f1=open('fort.1', 'w')
 
         #Tail of tlusty input file assumed to already be present in the current directory
-        #print(tailname)
         tailf=open(tailname, 'r')
 
         f1.write('1\n')
@@ -126,9 +122,9 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
         f5.write(tail) 
 
         #Format strings with info on teff, dmtot, qgrav for creating folder
-        t='{0:.5g}'.format(log_teff*10)
-        m='{0:.5g}'.format(log_dmtot*10)
-        q='{0:.5g}'.format(log_qgrav*10)
+        t='{0:.8g}'.format(log_teff*10)
+        m='{0:.8g}'.format(log_dmtot*10)
+        q='{0:.8g}'.format(log_qgrav*10)
 
         #print t
         #Create a folder in which to store the tlusty output in 
@@ -255,14 +251,13 @@ def converge_check(f='fort.9',  thres=0.1):
     print chmax[-1,0],chmax[-1,1]
     conv=(chmax[-1, 1]<thres)
 
+    #Check to see if the max relative change has been monotonically decreasing
     mono=True
     if (len(chmax)>=2):
         for i in range(1,end):
             if chmax[-i, 1]>1.01*chmax[-i-1,1]:
                 mono=False
 
-    #print mono            
-    
     bounded=True
     #Check to see if maximum relative change is bounded by by our threshold over the last few iterations
     for i in range(1, end+1):
@@ -360,15 +355,18 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
 
 ##Run tlusty based on parameters found at the location of model
 def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value='',interp=False):
-    process=bash_command('check ' + model + '/fort.5')
-    if len(process.stdout.readlines())==0:
-        return
-    params=ascii.read(model + '/fort.5', data_start=0, data_end=1)
-    #print params
-    log_teff=np.log10(params[0][1])
-    log_qgrav=np.log10(params[0][2])
-    log_dmtot=np.log10(params[0][3])
-    #print log_teff,log_dmtot
+    # process=bash_command('check ' + model + '/fort.5')
+    # if len(process.stdout.readlines())==0:
+    #     return
+    # params=ascii.read(model + '/fort.5', data_start=0, data_end=1)
+
+    #Extract parameters of model
+    params=parse_file(model)
+    log_teff=params[0]
+    log_dmtot=params[1]
+    log_qgrav=params[2]
+
+    #Setup necessary input file for running and the output directory where we will store output files
     outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
     if not outdir:
         return
