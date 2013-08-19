@@ -7,7 +7,7 @@ C
 C----------------------- Variable definitions ---------------------------
 C
       INTEGER MRE,NRO,NPHI,NK0,MK,NW,NWO,MKO,NDISK
-      PARAMETER (MRE =100, NRO =  32, NPHI =  32, NK0=0, MK = 23286, 
+      PARAMETER (MRE = 50, NRO = 128, NPHI = 128, NK0=0, MK = 23286, 
      %           NW  = 10, NWO =   1, MKO  = 531, NDISK =1)
       DOUBLE PRECISION A,AEQ,ALPHA,BETA,DEL,
      %       EPSINU,GAM,L,L2,ONE,OMEGAG,OMEGA,
@@ -20,7 +20,7 @@ C
      &       PSIM,PSIP,QQQ,R1,R2,R(MRE),RCUT,RE(MRE),RE0,RO(NRO),
      &       RG,MU(NW+2),SIGMAB,SIGMAT,SM,SSQRT,SU,
      &       T,T1,T2,TEFF(MRE),TMIN,U,V,WRO(NRO),WR(MRE),WT(NWO),
-     &       X,X0,X1,X2,X3,SIGNA,
+     &       X,X0,X1,X2,X3,
      &       MUHUB(NW),MUHUBWT(NW),NMISS(MKO,NWO),WA,WB,JUNK
       DOUBLE PRECISION A1,A2,B1,B2,DELTA,FCTISP,LSPEC(3,MKO),NUE,
      &       PANGLE,SFAC(3),TWO,WPHI,THIRD,WK(MKO),TEFF0,TRES,LTOT(3),
@@ -50,7 +50,6 @@ C----------------------- Initializations -------------------------------
 C
 C First, read in the frequencies to be used at the disk:
 C
- 
       READ(5,*) NK
       IF(NK.GT.0) THEN
         OPEN(UNIT=10,FILE='freqrad.in',STATUS='old')
@@ -106,12 +105,6 @@ C     a is the spin of the black hole in geometrized units:
 C
       READ(5,*) MASS,MDOT,A
 C
-
-      if(A .LT. 0.) THEN 
-         SIGNA=-1. 
-      ELSE 
-         SIGNA=1.
-      ENDIF
       MASS=MASS*MSUN
       MDOT=MDOT*MSUN/365.25D0/24.D0/3600.D0
 C-    Eddington Luminosity:
@@ -123,7 +116,7 @@ C     Marginally stable (direct) orbit radius, in units of mass
 C
       Z1=ONE+(ONE-A*A)**THIRD*((ONE+A)**THIRD+(ONE-A)**THIRD)
       Z2=SSQRT(TRES*A*A+Z1*Z1)
-      RMS=TRES+Z2-SIGNA*SSQRT((TRES-Z1)*(TRES+Z1+TWO*Z2))
+      RMS=TRES+Z2-SSQRT((TRES-Z1)*(TRES+Z1+TWO*Z2))
       X0=SSQRT(RMS)
       X1=TWO*COS((ACOS(A)-PI)*THIRD)
       X2=TWO*COS((ACOS(A)+PI)*THIRD)
@@ -351,8 +344,7 @@ C  The sign of the U integral starts out positive:
                SU=ONE
                IF(ABS(Q2).LT.1.D-16) Q2=ZERO
 C  Calculate the emission radius (UE=1/RE)
-               CALL GEOR3(ZERO,UE,MUO(II),ZERO,SIGNA*A,L,L2,Q2,TPM,TPR,
-     &              SU,SM)
+               CALL GEOR3(ZERO,UE,MUO(II),ZERO,A,L,L2,Q2,TPM,TPR,SU,SM)
 C  ....otherwise Newtonian version of the calculation:
                ELSE
                  UE=ONE/SQRT(ALPHA*ALPHA+BETA*BETA/MUO(II)/MUO(II))
@@ -380,7 +372,7 @@ C  computing the redshift and angle of emission:
                EPSINU=AEQ*UE*UE/SSQRT(DEL)
                ENU=SSQRT(DEL/AEQ)*RE0
 C  The rotational frequency, velocity, and Lorentz factor of the gas:
-               OMEGAG=SIGNA/(RE0*SSQRT(RE0)+A)
+               OMEGAG=ONE/(RE0*SSQRT(RE0)+A)
                VG=(RE0*RE0-TWO*A*SSQRT(RE0)+A*A)/SSQRT(DEL)*OMEGAG
                GAM=ONE/SSQRT(ONE-VG*VG)
                OMEGA=TWO*A*RE0/AEQ
@@ -405,12 +397,8 @@ C  Find where the emission radius lies on the grid of calculated radii:
               ENDIF
 C-  Calculate the emission+rotation angle PSI:
               IF(GR.EQ.1) THEN
-c-  I've modified these equations so that the input spin is always positive even thought that
-c-  may be incorrect
-              PSIP=PANGLE(RE0,TPR,L,SSQRT(Q2),BETA,ALPHA,SIGNA*A,ONE,
-     &                MUO(II))
-              PSIM=PANGLE(RE0,TPR,L,SSQRT(Q2),BETA,ALPHA,SIGNA*A,-ONE,
-     &             MUO(II))
+              PSIP=PANGLE(RE0,TPR,L,SSQRT(Q2),BETA,ALPHA,A,ONE,MUO(II))
+              PSIM=PANGLE(RE0,TPR,L,SSQRT(Q2),BETA,ALPHA,A,-ONE,MUO(II))
               ELSE
                 PSIP=0.d0
                 PSIM=0.d0
@@ -509,6 +497,7 @@ C-  Calculate flux and effective temperature:
                 FLUX=TRES*GN*MASS*MDOT*QQQ/8.D0/PI/RE0**TRES/BBB/
      %               SSQRT(CCC)/RG**TRES
                 TEFF0=(FLUX/SIGMAB)**FOURTH
+                ISPEC=0.D0
 		IF(RE0.LT.RE(1)) THEN
 		  ISPEC = 0.D0
 		ELSE
@@ -555,16 +544,14 @@ c one side of the disk) that an observer would measure at the particular
 c viewing angle theta, and d is the distance.
 c ***************************************************************************
       DO K=1,NKO
-         WRITE(6,200) NUO(K),LSPEC(1,K)
-c         WRITE(6,200) NUO(K),LSPEC(1,K),LSPEC(2,K),LSPEC(3,K),
-c     &                NMISS(K,II)
+         WRITE(6,200) NUO(K),LSPEC(1,K),LSPEC(2,K),LSPEC(3,K),
+     &                NMISS(K,II)
          DO M=1,3
             LTOT(M)=LTOT(M)+WT(II)*WK(K)*LSPEC(M,K)
          END DO
       END DO
       CALL FLUSH(6)
 C---------------------------------------------------------
-c 200  FORMAT(10(1x,1pe13.5))
  200  FORMAT(10(1x,1pe13.5))
  201  FORMAT(1x,1pe13.5)
       END
