@@ -33,9 +33,10 @@ M_sun=2.*10**33
 
 ##Run a command from the bash shell
 def bash_command(cmd):
-    process=subprocess.Popen(['/bin/bash', '-c', cmd],  stdout=subprocess.PIPE)
-    process.wait()
-    return process
+    process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    return process.communicate()[0]
+    # process.wait()
+    # return process
 
 ##Function to extract frequency from wavelength in angstroms
 def get_freq(w):
@@ -218,7 +219,7 @@ def get_params(file):
 
 
 ##Use table construct spectra from list of parameters
-def params_to_spec(params, table, method='', logi=False, mu=-1):
+def params_to_spec(params, table, method='', logi=False):
     intens=table[1]
     #Interpolating based on table
     if method:
@@ -241,7 +242,6 @@ def params_to_spec(params, table, method='', logi=False, mu=-1):
     
     #Return the interpolated spectra for parameters within our grid
     return grid2
-
 
 
 ##Compares tlusty spectrum to one that is interpolated from a table 
@@ -346,7 +346,7 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
             if valid:
                 L[j] =(L[j] +rad*f[i,j])
                 L2[j]=(L2[j]+rad*f[i,j])
-            #Otherwise...
+            #Otherwise add bb flux to L but not L2
             else:
                 L[j]+=(tmpbb)
 
@@ -354,21 +354,37 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
 
 
 ##Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
+def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
     #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
-    M=np.fromfile(f, dtype=float, count=1, sep=' ')[0]
-    disk_params=np.genfromtxt(f, skip_header=1)
-    print disk_params[0]
+    #For consistency with disk_spec_gr. Not only M will do anything here
+    #Get mass, spin, inclination from the header line 
+    global_params=dict({'M':1.e6})
+    header=bash_command('head -1 '+f)
+    header=shlex.split(header)
+    for p in header:
+        p2=p.split('=')
+        if p2[0] in global_params:
+            global_params[p2[0]]=float(p2[1])
 
-    specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi, mu=mu)
+    M=global_params['M']
+    mu=-1
+
+    disk_params=np.genfromtxt(f, skip_header=1)
+    specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi)
 
     r=disk_params[:, 0]
     Teff=disk_params[:, 1]
     Qg=disk_params[:, 3]
 
-
+    #Finding the total flux, for the given parameters
+    totf=sum_spec(r, specs, Teff, Qg, M=M)
+    nu=totf[0][:,mu]
+    totfg=totf[1][:,mu]
+    totfb=totf[2][:,mu]
+    totft=totf[3][:,mu]
+    totft2=totf[4][:,mu]
 
     # #r=r*(G*M*M_sun/c**2)  
     # lr=np.log10(r)
@@ -377,88 +393,24 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
     # dr=np.empty_like(r)
     # for i in range(len(lr)):
     #     dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
+    fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
+    # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+    # #plt.xlabel(r"$\nu$ [hz]")
+    #Plotting the composite disk spectrum
+    ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
+    ax.set_xlim(10.**14, 10.**17)
+    ax.set_ylim(10.**40, 10.**45)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
 
+    ax.plot(nu, nu*totfg, label ='graybody')
+    ax.plot(nu, nu*totfb, label ='blackbody')
+    ax.plot(nu, nu*totft, label ='tlusty+bb')
+    ax.plot(nu, nu*totft2,label ='tlusty')
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], labels[::-1])
 
-    #Finding the total flux, for the given parameters
-    totf=sum_spec(r, specs, Teff, Qg, M=M)
-    nu=totf[0][:,-1]
-    totfg=totf[1][:,-1]
-    totfb=totf[2][:,-1]
-    totft=totf[3][:,-1]
-    totft2=totf[4][:,-1]
-
-
-
-    bash_command('rm emrad.in')
-    emrad=open('emrad.in','a')
-    for i in range(len(r)):
-        np.savetxt(emrad, [[r[i], len(nu)]], fmt='%6.4f %i')
-        for j in (range(len(nu)))[::-1]:
-            np.savetxt(emrad, [[get_w(nu[j]), specs[i,1,j,-1]/(4*np.pi)]], fmt='%6.4e')
-            intens=specs[i,1,j,:-1]
-            pol=np.zeros_like(intens)
-            intens=np.transpose([intens,pol])
-            intens=intens.flatten()
-            intens.shape=(2,10)
-            np.savetxt(emrad,intens, fmt='%6.4e')
-
-
-        #emrad.write('{0:.8g}'.format(r[i]))
-
-
-    # print len(totft)
-
-
-    # colors=np.empty([5,4])
-    # for z in range(0,5):
-    #     colors[z]=to_colors(np.array([nu, totft]), z=z)
-
-
-    # fig=plt.figure()
-    # ax=fig.add_subplot(221)
-    # ax.set_xlim(-1,5)
-    # ax.set_ylim(-1,3)
-    # ax.plot(colors[0,:], colors[1,:], 'rs')
-
-    # ax=fig.add_subplot(222)
-    # ax.set_xlim(-1,3)
-    # ax.set_ylim(-1,3)
-    # ax.plot(colors[1,:], colors[2,:], 'rs')
-
-    # ax=fig.add_subplot(223)
-    # ax.set_xlim(-1,3)
-    # ax.set_ylim(-1,2)
-    # ax.plot(colors[2,:], colors[3,:], 'rs')
-    # plt.show()
-    # plt.close()
-    # np.savetxt('spec', np.transpose(np.array([nu, totft])))
-
-
-    # fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
-    # # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
-    # # #plt.xlabel(r"$\nu$ [hz]")
-
-
-
-    # # # #Plotting the composite disk spectrum
-    # # ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
-    # ax.set_xlim(10.**14, 10.**17)
-    # ax.set_ylim(10.**40, 10.**45)
-    # ax.set_xscale('log')
-    # ax.set_yscale('log')
-
-
-    
-    # ax.plot(nu, nu*totfg, label='graybody')
-    # ax.plot(nu, nu*totfb, label='blackbody')
-    # ax.plot(nu, nu*totft, label='tlusty+bb')
-    # ax.plot(nu, nu*totft2, label='tlusty')
-
-
-    # handles, labels = ax.get_legend_handles_labels()
-    # ax.legend(handles[::-1], labels[::-1])
-
-    # # #Plotting the contributions of individual annuli
+    # #Plotting the contributions of individual annuli
     # nu=specs[0,0]
     # ax[1].set_ylim(10**-5,10)
     # ax[1].set_xlim(10**14, 10**17)
@@ -473,12 +425,75 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
     #     valid[i]=not np.any(np.isnan(specs[i,1]))
     
     # ax[0].plot(nu,2.6*np.mean(specs[valid==1,1], axis=0))
+    # ax[1].plot(wl,10**6*np.mean(specs[valid==1,1]/wl**2, axis=0))
+    plt.close()
+    return fig
 
 
-    
-    #ax[1].plot(wl,10**6*np.mean(specs[valid==1,1]/wl**2, axis=0))
-    # plt.close()
-    # return fig
+##Given a radial disk profile, calculates the spectra of each of the annuli, and then call the kerrtrans9 routine
+def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14, 1.e17]):
+    #Construct table if necessary
+    if table==[]:
+        table=construct_table(tablef, logi=logi)
+
+    #Get mass, spin, inclination from the header line 
+    global_params=dict({'M':1.e6, 'a':0., 'mu':0.6})
+    header=bash_command('head -1 '+f)
+    header=shlex.split(header)
+    for p in header:
+        p2=p.split('=')
+        if p2[0] in global_params:
+            global_params[p2[0]]=float(p2[1])
+ 
+    M=global_params['M']
+    mu=global_params['mu']
+    a=global_params['a']
+
+    print M,mu,a
+
+
+    #Get the radial profile of the disk 
+    disk_params=np.genfromtxt(f, skip_header=1)
+    specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi)
+    nu=specs[0,0,:,-1]
+    r=disk_params[:, 0]
+    Teff=disk_params[:, 1]
+    Qg=disk_params[:, 3]
+
+    #Creating an input file for kerrtrans9
+    bash_command('rm tmp.in')
+    kerr_in=open('tmp.in','a')
+    #Writing frequency information...
+    np.savetxt(kerr_in, [-len(nu)], fmt='%i')
+    np.savetxt(kerr_in, [[nu[0],nu[-1]]], fmt='%7.5e')
+    np.savetxt(kerr_in, [-len(nu)], fmt='%i')
+    np.savetxt(kerr_in, [fobs], fmt='%7.5e')
+    #Writing disk parameter information...
+    np.savetxt(kerr_in, [mu], fmt='%f')
+    np.savetxt(kerr_in, [[M, 0., a]],fmt='%7.5e %f %f')
+    np.savetxt(kerr_in,[[r[-1],-1.,len(r),4,1]], fmt='%f %f %i %i %i')
+    kerr_in.close()
+
+    #Creating spectral input file for kerrtrans9
+    bash_command('rm emrad.in')
+    emrad=open('emrad.in','a')
+    for i in range(len(r)):
+        np.savetxt(emrad, [[r[i], len(nu)]], fmt='%7.5f %i')
+        for j in (range(len(nu)))[::-1]:
+            np.savetxt(emrad, [[get_w(nu[j]), specs[i,1,j,-1]/(4*np.pi)]], fmt='%7.5e')
+            intens=specs[i,1,j,:-1]
+            pol=np.zeros_like(intens)
+            intens=np.transpose([intens,pol])
+            intens=intens.flatten()
+            intens.shape=(2,10)
+            np.savetxt(emrad,intens, fmt='%7.5e')
+    emrad.close()
+
+    #Running kerrtrans9 now that input files tmp.in and emrad.in have been generated. Output spectrum to file labelled by
+    #disk parameters.
+    bash_command('./kerrtrans9 <tmp.in >sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu))
+
+
 
 def main():
     parser=argparse.ArgumentParser(
@@ -506,12 +521,14 @@ def main():
     parser.add_argument('-li', '--logi',
         help='Specifies that the interpolation should be done in terms of log intensity instead of brightness temp.',
         action='store_true')
+    parser.add_argument('-gr', '--gr',
+        help='Specifies that we should use relativistic transfer function to calculate the composite disk spectrum.',
+        action='store_true')
     # parser.add_argument('-a', '--animate',
     #     help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.'
     #     a)
 
     args=parser.parse_args()
-    
     t=args.test
     d=args.disk
     method=args.method
@@ -519,16 +536,19 @@ def main():
     logi=args.logi
     skip=args.skip
     mu=args.mu
-  
+    gr=args.gr
     if d:
         table=construct_table(tablef, logi=logi)
-        pdf_pages = PdfPages('composite.pdf')
+        #pdf_pages = PdfPages('composite.pdf')
         param_files=np.genfromtxt(d, dtype=str)
+        param_files=np.atleast_1d(param_files)
         for i in range(len(param_files)):
             #print param_files
-            fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi, mu=mu)
-            # fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi, mu=mu)
-            # fig.savefig('composite_'+str(i)+'.pdf')
+            if gr:
+                disk_spec_gr(param_files[i], table=table, tablef=tablef, method=method,logi=logi)
+            else:
+                fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi)
+                fig.savefig('composite_'+str(i)+'.pdf')
             #pdf_pages.savefig(fig)
         #pdf_pages.close()
     elif t:
@@ -540,7 +560,7 @@ def main():
         # logfile=open('interp_log', 'a')
 
         # deviation_list=np.empty(0)
-        models=process.stdout.readlines()[0]
+        #models=process.stdout.readlines()[0]
         models=shlex.split(models)
         if skip:
             skip_models=np.genfromtxt(t+'/'+skip, dtype=str)
@@ -660,3 +680,28 @@ if __name__ == '__main__':
 # savefig("composite_pert.pdf")
 
 
+
+
+   # colors=np.empty([5,4])
+    # for z in range(0,5):
+    #     colors[z]=to_colors(np.array([nu, totft]), z=z)
+
+
+    # fig=plt.figure()
+    # ax=fig.add_subplot(221)
+    # ax.set_xlim(-1,5)
+    # ax.set_ylim(-1,3)
+    # ax.plot(colors[0,:], colors[1,:], 'rs')
+
+    # ax=fig.add_subplot(222)
+    # ax.set_xlim(-1,3)
+    # ax.set_ylim(-1,3)
+    # ax.plot(colors[1,:], colors[2,:], 'rs')
+
+    # ax=fig.add_subplot(223)
+    # ax.set_xlim(-1,3)
+    # ax.set_ylim(-1,2)
+    # ax.plot(colors[2,:], colors[3,:], 'rs')
+    # plt.show()
+    # plt.close()
+    # np.savetxt('spec', np.transpose(np.array([nu, totft])))
