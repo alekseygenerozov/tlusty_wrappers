@@ -1,6 +1,5 @@
       program dispar3
       IMPLICIT REAL*8 (A-H,O-Z)
-      REAL MU,KAP,MUE
       PARAMETER (VELC=2.997925E10)
       PARAMETER (GRCON = 6.668D-8)
       PARAMETER (SIG4P = 4.5114062D-6)
@@ -21,13 +20,6 @@ C     NRE        - number of radial annuli
 C
       READ(5,*) XMSTAR,XMDOT,AA,ALPHA
       READ(5,*) ROUT,TMIN,DELTAR,NRE
-      READ(5,*) XH
-
-      if(AA .LT. 0.) THEN 
-         SIGNA=-1. 
-      ELSE 
-         SIGNA=1.
-      ENDIF
 C
       IF(ALPHA.EQ.0.) ALPHA=0.01
 C
@@ -42,7 +34,7 @@ C
       AA2=AA*AA
       Z1 = ONE + (ONE-AA2)**THIRD * ((ONE+AA)**THIRD + (ONE-AA)**THIRD)
       Z2 = SQRT(THREE*AA2 + Z1*Z1)
-      RMS = THREE + Z2 -SIGNA*SQRT((THREE-Z1)*(THREE+Z1+TWO*Z2))
+      RMS = THREE + Z2 - SQRT((THREE-Z1)*(THREE+Z1+TWO*Z2))
 C
 C     set up radii to represent a disk  
 C
@@ -106,18 +98,14 @@ C Compute the surface mass density (assuming pure electron scattering,
 C pure hydrogen composition, and that T_rphi = \alpha P_tot):
 C
          XMD=XMDOT*6.3029D25
-c         XH=0.7
-         MUE=2.0/(1.0+XH)
-         MU=4.0/(3.0+5.0*XH)
-         KAP=0.398/MUE
-         DMTOT=0.5*SIGMAR(ALPHA,XMD,TEFF,OMEGA,RELR,RELT,RELZ,KAP,MU)
+         DMTOT=0.5*SIGMAR(ALPHA,XMD,TEFF,OMEGA,RELR,RELT,RELZ)
 C
          TEFFL=LOG10(TEFF)
          QGRAL=LOG10(QGRAV)
          DMTOL=LOG10(DMTOT)
          WRITE(6,601) R(I),TEFFL,DMTOL,QGRAL,TEFF,DMTOT,QGRAV
       END DO
-  601 FORMAT(4f10.3,f12.1,1p2e13.4)
+  601 FORMAT(4f10.3,f10.1,1p2e13.4)
       END
 C
 C
@@ -159,13 +147,6 @@ C  ---------------------------------
 C  Set correcion factors A through G  (see Novikov & Thorne,'73, eq.5.4.1a-g)
 C  ---------------------------------
 C
-
-        if(AA .LT. 0.) THEN 
-           SIGNA=-1. 
-        ELSE 
-           SIGNA=1.
-        ENDIF
-
         rror=rr
         rr=abs(rr)
 	AA2=AA*AA
@@ -201,7 +182,7 @@ C	Minimum radius for last stable circular orbit per unit mass, X0
 C
 	Z1 = 1 + (1-AA2)**THIRD * ((1+AA)**THIRD + (1-AA)**THIRD)
 	Z2 = SQRT(3*AA2 + Z1*Z1)
-	R0 = 3 + Z2 -SIGNA*SQRT((3-Z1)*(3+Z1+2*Z2))
+	R0 = 3 + Z2 - SQRT((3-Z1)*(3+Z1+2*Z2))
 	X0 = SQRT(R0)
 c
         if(rr.lt.r0) then
@@ -256,7 +237,7 @@ C
 C     ****************************************************************
 C
 C
-      FUNCTION SIGMAR(ALPHA,XMDOT,TEF,OMEGA,RELR,RELT,RELZ,kap,mu)
+      FUNCTION SIGMAR(ALPHA,XMDOT,TEF,OMEGA,RELR,RELT,RELZ)
 C     =====================================================
 c
 C--------------------------------------------------------------------
@@ -283,7 +264,7 @@ C--------------------------------------------------------------------
 C
       IMPLICIT REAL*8 (A-H,O-Z)
       PARAMETER (HALF=0.5D0)
-      REAL KAPPA,MU,KAP
+      REAL KAPPA,MU
       COMPLEX*16 COEFF(11),XGUESS
 C
 C We should check that the physical constants used here agree with those in
@@ -297,42 +278,34 @@ C
 C
 C We'll assume fully ionized, pure hydrogen:
 C
-c      KAPPA=0.40D0
-c      MU=0.5D0*1.6726D-24
-      KAPPA=KAP
-      MU=MU*1.6726D-24
-c      FAC1=RELZ*(HALF*TRES*C*OMEGA/ALPHA/KAPPA/SIGMAB/TEF**4)**2
-c      FAC2=(HALF*KAPPA)**FOURTH*BK*TEF/MU
-c      FAC3=XMDOT*OMEGA*RELT/PI
-
+      KAPPA=0.40D0
+      MU=0.5D0*1.6726D-24
+      FAC1=RELZ*(HALF*TRES*C*OMEGA/ALPHA/KAPPA/SIGMAB/TEF**4)**2
       FAC2=(HALF*KAPPA)**FOURTH*BK*TEF/MU
-      FAC3=(c*omega/(kappa*sigmab*tef**4))**2*relz
-      FAC1=XMDOT*OMEGA*RELT/(2.0*PI*alpha)
+      FAC3=XMDOT*OMEGA*RELT/PI
 C
 C Coefficients of the equation for x^4=Sigma:
 C
-      COEFF(1)=DCMPLX(FAC3*(2.0*FAC1)**2,ZERO)
+      COEFF(1)=DCMPLX(FAC1*(HALF*FAC3)**2,ZERO)
       COEFF(2)=ZERO
       COEFF(3)=ZERO
       COEFF(4)=ZERO
-      COEFF(5)=DCMPLX(-2.0*FAC1,ZERO)
-      COEFF(6)=DCMPLX(-4.0*FAC1*FAC3*FAC2,ZERO)
+      COEFF(5)=DCMPLX(-(TRES*FAC3)/(8.D0*ALPHA),ZERO)
+      COEFF(6)=DCMPLX(-FAC1*FAC3*ALPHA*FAC2,ZERO)
       COEFF(7)=ZERO
       COEFF(8)=ZERO
       COEFF(9)=ZERO
-      COEFF(10)=ZERO
-      COEFF(11)=DCMPLX(FAC3*FAC2**2,ZERO)
+      COEFF(10)=DCMPLX(FOURTH*FAC2,ZERO)
+      COEFF(11)=DCMPLX(FAC1*(ALPHA*FAC2)**2,ZERO)
 C
 C At small radii, we'll approximate P_rad >> P_gas
 C First, compute sigma assuming radiation pressure dominates:
 C
-c      SIGRAD=FOUR*OMEGA*C*C*RELT*RELZ/ALPHA/KAPPA**2/SIGMAB/TEF**4/RELR
-      SIGRAD=(2.0*fac1*fac3)
+      SIGRAD=FOUR*OMEGA*C*C*RELT*RELZ/ALPHA/KAPPA**2/SIGMAB/TEF**4/RELR
 C
 C Next, compute sigma assuming gas pressure dominates:
 C
-      SIGGAS=(2.0*fac1/fac2)**0.8
-c      SIGGAS=((MU*XMDOT*OMEGA*RELT/PI/ALPHA/BK/TEF)**4/8./KAPPA)**0.2D0
+      SIGGAS=((MU*XMDOT*OMEGA*RELT/PI/ALPHA/BK/TEF)**4/8./KAPPA)**0.2D0
 C
 C Use a starting guess which has the correct value for P_gas >> P_rad
 C or P_rad >> P_gas.
@@ -351,7 +324,6 @@ C
         SIGMAR=ONE/(ONE/SIGRAD+ONE/SIGGAS)
         WRITE(6,*) 'Surface density approximated'
       ENDIF
-c      sigmar=sigrad
 c      WRITE(6,2000) TEF,SIGRAD,SIGGAS,SIGMAR
       RETURN
  2000 FORMAT(20(2x,1pe12.5))
