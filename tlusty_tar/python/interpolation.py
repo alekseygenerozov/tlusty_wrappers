@@ -18,6 +18,7 @@ import tlusty_runs as tr
 import warnings
 
 import shlex
+from types import*
 
 
 
@@ -85,7 +86,6 @@ def get_spec(file,  mu=-1, nmu=10):
         wlh=np.genfromtxt(file, invalid_raise=False)
     
     nfreq=len(wlh)
-
     spec=spec.flatten()
     wlh=wlh.flatten()
     #Skip over fluxes and polarizations
@@ -106,7 +106,7 @@ def get_spec(file,  mu=-1, nmu=10):
 
 # Regrid spectrum in wavelength space. Want all spectra to be on the same grid in wavelength space when we interpolate; In frequency the default limits for the 
 # the wavelength correspond to 2.4e14 and 5e19 Hz.
-def regrid(spec, wlo=0.06, whi=12400, nws=300):
+def regrid(spec, wlo=30, whi=3.e5, nws=300):
     wgrid=np.log(wlo)+np.log(whi/wlo)*np.arange(0, nws)/(nws-1)
     newspec=griddata(np.log(spec[0]), spec[1], wgrid, fill_value=1.e-36,method='linear')
     newspec=newspec[::-1]
@@ -132,7 +132,7 @@ def Tb(freq, intens, fcol=2):
 
 # Invert brightness temperature to obtain the intensity
 def Tb_inv(freq, Tb, fcol=2):
-    if np.isinf(np.exp(h*freq/kb/fcol/10**Tb)):
+    if np.any(np.isinf(np.exp(h*freq/kb/fcol/10**Tb))):
         return 0
     try:
         return (2./fcol**4)*(h*(freq**3)/c/c)/(np.exp(h*freq/kb/fcol/10**Tb)-1)
@@ -223,9 +223,9 @@ def params_to_spec(params, table, method='', logi=False, mu=-1):
     #Interpolating based on table
     if method:
         print method
-        grid2=griddata(table[0], intens[:,:,:,mu], params, method=method)
+        grid2=griddata(table[0], intens, params, method=method)
     else:
-        grid2=griddata(table[0], intens[:,:,:,mu], params)
+        grid2=griddata(table[0], intens, params)
 
     good=np.empty(len(grid2), dtype=bool)
     for i in range(len(grid2)):
@@ -318,17 +318,17 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
     dlr=np.diff(lr)[0]
     print dlr
 
-    dr={}
+    dr=np.empty_like(lr)
     for i in range(len(lr)):
         dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
     #Implicitly assuming that the first entry is not outside our grid -- not ideal!
     nu=specs[0,0]
     f=specs[:, 1]
 
-    L=np.zeros(len(nu))
-    L2=np.zeros(len(nu))
-    bb=np.zeros(len(nu))
-    gb=np.zeros(len(nu))
+    bb=np.zeros_like(f[0])
+    gb=np.zeros_like(f[0])
+    L=np.zeros_like(f[0])
+    L2=np.zeros_like(f[0])
     for i in range(len(r)):
         #Check for any invalid entries -- these correspond to the parameters outside the edge of our table
         valid=not np.any(np.isnan(specs[i]))
@@ -336,16 +336,19 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
         #For every frequncy under consideration
         for j in range(len(nu)):
             #If we have a valid interpolated spectrum...
+            tmpbb=np.empty(11)
+            tmpgb=np.empty(11)
+            tmpbb.fill(rad*(np.pi*Tb_inv(nu[j,0], Teff[i], fcol=1)))
+            tmpgb.fill(rad*(gray.gb(nu[j,0], 10.**Teff[i], 10.**Qg[i])))
+
+            bb[j]+=tmpbb
+            gb[j]+=tmpgb
             if valid:
-                bb[j]+=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
-                gb[j]+=rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
-                L[j] +=rad*f[i,j]
-                L2[j]+=rad*f[i,j]
+                L[j] =(L[j] +rad*f[i,j])
+                L2[j]=(L2[j]+rad*f[i,j])
             #Otherwise...
             else:
-                bb[j]+=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
-                gb[j]+=rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i]))
-                L[j] +=rad*(np.pi*Tb_inv(nu[j], Teff[i], fcol=1))
+                L[j]+=(tmpbb)
 
     return (nu, gb, bb, L, L2) 
 
@@ -365,6 +368,8 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
     Teff=disk_params[:, 1]
     Qg=disk_params[:, 3]
 
+
+
     # #r=r*(G*M*M_sun/c**2)  
     # lr=np.log10(r)
     # #For now assuming a logarithmically evenly spaced grid--for simplicity
@@ -376,11 +381,30 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
 
     #Finding the total flux, for the given parameters
     totf=sum_spec(r, specs, Teff, Qg, M=M)
-    nu=totf[0]
-    totfg=totf[1]
-    totfb=totf[2]
-    totft=totf[3]
-    totft2=totf[4]
+    nu=totf[0][:,-1]
+    totfg=totf[1][:,-1]
+    totfb=totf[2][:,-1]
+    totft=totf[3][:,-1]
+    totft2=totf[4][:,-1]
+
+
+
+    bash_command('rm emrad.in')
+    emrad=open('emrad.in','a')
+    for i in range(len(r)):
+        np.savetxt(emrad, [[r[i], len(nu)]], fmt='%6.4f %i')
+        for j in (range(len(nu)))[::-1]:
+            np.savetxt(emrad, [[get_w(nu[j]), specs[i,1,j,-1]/(4*np.pi)]], fmt='%6.4e')
+            intens=specs[i,1,j,:-1]
+            pol=np.zeros_like(intens)
+            intens=np.transpose([intens,pol])
+            intens=intens.flatten()
+            intens.shape=(2,10)
+            np.savetxt(emrad,intens, fmt='%6.4e')
+
+
+        #emrad.write('{0:.8g}'.format(r[i]))
+
 
     # print len(totft)
 
@@ -410,27 +434,29 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
     # np.savetxt('spec', np.transpose(np.array([nu, totft])))
 
 
-    fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
-    # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
-    #plt.xlabel(r"$\nu$ [hz]")
+    # fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
+    # # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+    # # #plt.xlabel(r"$\nu$ [hz]")
 
 
 
-    # #Plotting the composite disk spectrum
-    ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
-    ax.set_xlim(10.**14, 10.**17)
-    ax.set_ylim(10.**40, 10.**45)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
+    # # # #Plotting the composite disk spectrum
+    # # ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
+    # ax.set_xlim(10.**14, 10.**17)
+    # ax.set_ylim(10.**40, 10.**45)
+    # ax.set_xscale('log')
+    # ax.set_yscale('log')
 
 
     
-    ax.plot(nu, nu*totfg, label='graybody')
-    ax.plot(nu, nu*totfb, label='blackbody')
-    ax.plot(nu, nu*totft, label='tlusty+bb')
-    ax.plot(nu, nu*totft2, label='tlusty')
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[::-1], labels[::-1])
+    # ax.plot(nu, nu*totfg, label='graybody')
+    # ax.plot(nu, nu*totfb, label='blackbody')
+    # ax.plot(nu, nu*totft, label='tlusty+bb')
+    # ax.plot(nu, nu*totft2, label='tlusty')
+
+
+    # handles, labels = ax.get_legend_handles_labels()
+    # ax.legend(handles[::-1], labels[::-1])
 
     # # #Plotting the contributions of individual annuli
     # nu=specs[0,0]
@@ -451,8 +477,8 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1):
 
     
     #ax[1].plot(wl,10**6*np.mean(specs[valid==1,1]/wl**2, axis=0))
-    plt.close()
-    return fig
+    # plt.close()
+    # return fig
 
 def main():
     parser=argparse.ArgumentParser(
@@ -501,9 +527,10 @@ def main():
         for i in range(len(param_files)):
             #print param_files
             fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi, mu=mu)
-            fig.savefig('composite_'+str(i)+'.pdf')
+            # fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi, mu=mu)
+            # fig.savefig('composite_'+str(i)+'.pdf')
             #pdf_pages.savefig(fig)
-        pdf_pages.close()
+        #pdf_pages.close()
     elif t:
         table=construct_table(tablef, logi=logi)
         # pdf_pages = PdfPages('interp_test.pdf')
