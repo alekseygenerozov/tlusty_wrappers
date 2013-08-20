@@ -121,7 +121,8 @@ for i=0,n_elements(tl)-1 do begin
                     pl0=pol0(*,m)
                     pls=interpol(pl0,wl,wls)
                     for n=0,nws-1 do begin
-                        int(i,j,k,n,m)=alog(h/fc/kb*freqs(n)/alog(1.0+2.0*h*(freqs(n))^3/fc^4/c^2/ins(n)) )
+                        int(i,j,k,n,m)=alog(ins(n))
+                        ;int(i,j,k,n,m)=alog(h/fc/kb*freqs(n)/alog(1.0+2.0*h*(freqs(n))^3/fc^4/c^2/ins(n)) )
                         if(n eq 100 and m eq 4) then print,int(i,j,k,n,m),ins(n)
                         pol(i,j,k,n,m)=pls(n)
                     endfor
