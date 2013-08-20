@@ -80,6 +80,7 @@ int jac(double u, const double y[], double *dfdy, double dfdt[], void *params){
 int main(int argc, char* argv[]){
     //Check to see that number of arguments is appropriate
     if(argc!=4){
+      printf("%lf\n",gamma(1.E-8, 1.E5))
       printf("Useage:./a.out Sigma Mdot Radius\n");
       return 1;
     }

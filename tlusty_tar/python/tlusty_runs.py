@@ -34,11 +34,12 @@ def parse_atm(f='fort.7'):
     #Reshaping data array
     atm=atm[2+nd:]
     atm=np.reshape(atm, (-1,blocks))
-
-    #print np.shape(m),np.shape(atm)
     #Concatenating mass depth grid with the actual vertical structure data
     atm=np.concatenate((m, atm), axis=1)
     return atm
+
+
+
 
 
 ##Checks atmospheric structures for density inversions greater than a certain threshold.
@@ -49,7 +50,7 @@ def inv_check(atm, thres=1.e-2):
     #Fractional change in density
     frac=diff/dens
     frac=np.min(frac)
-    #print frac
+    print frac
     #If the 'largest' negative fractional change in density exceeds the specified threshold then return True, otherwise
     #return false
     if(frac<-thres):
@@ -299,8 +300,6 @@ def clean(outdir, nlte, remove=False):
     else:
         dest=dest + outdir + '/nconv'
 
-
-    
     #check for existence of destination file
     i=2
     dest_orig=dest
@@ -339,27 +338,23 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
     #Move tlusty output files to the appropriate directory
     [conv,model]=clean(outdir, nlte, remove)       
     if not conv:
-        return
+        return conv
     print model
     #If we would like to calculate a combination of lte and nlte atmospheres
     if combo:
         nlte=True
         outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, True, tailname, value)
         if not outdir: 
-            return
+            return outdir
         run()
         #Move tlusty output files to the appropriate directory
-        clean(outdir, nlte, remove)
+        [conv,model]=clean(outdir, nlte, remove)
+    return conv
 
 
 
 ##Run tlusty based on parameters found at the location of model
 def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value='',interp=False):
-    # process=bash_command('check ' + model + '/fort.5')
-    # if len(process.stdout.readlines())==0:
-    #     return
-    # params=ascii.read(model + '/fort.5', data_start=0, data_end=1)
-
     #Extract parameters of model
     params=parse_file(model)
     log_teff=params[0]

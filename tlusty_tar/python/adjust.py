@@ -29,8 +29,9 @@ def adjust_file(p, end, file='tmp.flag'):
         f=open(file, 'w')
         f.write(new) 
     #If the parameter is not present then simply append it to the end of the optional parameters file
-    f=open(file, 'a')
-    f.write(s2+'\n')
+    else:
+        f=open(file, 'a')
+        f.write(s2+'\n')
 
 
 ## Adjusts parameter p in tmp.flag until we have reached target

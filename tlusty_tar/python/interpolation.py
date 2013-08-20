@@ -212,36 +212,38 @@ def construct_table(models, logi=False):
 
     return (params, spec)
 
-    
 ##Get parameters corresponding to our disk
 def get_params(file):
     return np.genfromtxt(file)
 
-
 ##Use table construct spectra from list of parameters
 def params_to_spec(params, table, method='', logi=False):
     intens=table[1]
+    nu=table[1][0,0]
     #Interpolating based on table
     if method:
-        print method
         grid2=griddata(table[0], intens, params, method=method)
     else:
         grid2=griddata(table[0], intens, params)
 
-    good=np.empty(len(grid2), dtype=bool)
+    good=np.empty(len(grid2))
+    good.fill(True)
     for i in range(len(grid2)):
         #print np.any(np.isnan(grid2[i]))
         if np.any(np.isnan(grid2[i])):
-            continue
+            grid2[i,0]=nu
+            grid2[i,1].fill(params[i,0])
+            fcol=np.ones_like(nu)
+            grid2[i,1]=map(Tb_inv, nu, grid2[i,1], fcol)
+            
+            good[i]=False
         elif logi:
-            print logi
             grid2[i,1]=10.**grid2[i,1]
         else:
             grid2[i,1]=np.array(map(Tb_inv,grid2[i,0],grid2[i,1]))
 
-    
     #Return the interpolated spectra for parameters within our grid
-    return grid2
+    return (grid2,good)
 
 
 ##Compares tlusty spectrum to one that is interpolated from a table 
@@ -321,7 +323,9 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
     dr=np.empty_like(lr)
     for i in range(len(lr)):
         dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
-    #Implicitly assuming that the first entry is not outside our grid -- not ideal!
+    
+    valid=specs[1]
+    specs=specs[0]
     nu=specs[0,0]
     f=specs[:, 1]
 
@@ -331,7 +335,7 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
     L2=np.zeros_like(f[0])
     for i in range(len(r)):
         #Check for any invalid entries -- these correspond to the parameters outside the edge of our table
-        valid=not np.any(np.isnan(specs[i]))
+        # valid=not np.any(np.isnan(specs[i]))
         rad=2*np.pi*r[i]*dr[i]
         #For every frequncy under consideration
         for j in range(len(nu)):
@@ -343,7 +347,7 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
 
             bb[j]+=tmpbb
             gb[j]+=tmpgb
-            if valid:
+            if valid[i]:
                 L[j] =(L[j] +rad*f[i,j])
                 L2[j]=(L2[j]+rad*f[i,j])
             #Otherwise add bb flux to L but not L2
@@ -449,12 +453,16 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
     mu=global_params['mu']
     a=global_params['a']
 
-    print M,mu,a
-
-
     #Get the radial profile of the disk 
     disk_params=np.genfromtxt(f, skip_header=1)
     specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi)
+    specs=specs[0]
+    # for s in specs[1]:
+    #     invalid=not s
+    # specs=specs[0]
+    # specs2=specs
+    # specs2[invalid,1].fill(0.)
+
     nu=specs[0,0,:,-1]
     r=disk_params[:, 0]
     Teff=disk_params[:, 1]
@@ -473,6 +481,7 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
     np.savetxt(kerr_in, [[M, 0., a]],fmt='%7.5e %f %f')
     np.savetxt(kerr_in,[[r[-1],-1.,len(r),4,1]], fmt='%f %f %i %i %i')
     kerr_in.close()
+
 
     #Creating spectral input file for kerrtrans9
     bash_command('rm emrad.in')
