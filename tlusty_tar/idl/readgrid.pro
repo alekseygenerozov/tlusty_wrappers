@@ -34,14 +34,14 @@ wl=fltarr(nw0)
 int0=fltarr(nw0,na)
 pol0=int0
 ;
-tl=4.+findgen(13)*0.1
+tl=4.+findgen(15)*0.1
 ml=4.+findgen(3)
-ql=-12.+findgen(7)
+ql=-12.+findgen(10)
 ;
 tlab=['40','41','42','43','44','45','46','47','48','49',$
-      '50','51','52']
+      '50','51','52','53','54']
 mlab=['40','50','60']
-qlab=['-120','-110','-100','-90','-80','-70','-60']
+qlab=['-120','-110','-100','-90','-80','-70','-60','-50','-40','-30']
 ;
 
 int=fltarr(n_elements(tl),n_elements(ml),n_elements(ql),nws,na)
@@ -55,7 +55,7 @@ openr,lun1,'tmpd'
 iex=0
 ii=0
 a=''
-modl=strarr(1000)
+modl=strarr(5000)
 while not eof(lun1) do begin
   readf,lun1,a
   modl(ii)=strtrim(a,2)

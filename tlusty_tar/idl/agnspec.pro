@@ -53,7 +53,7 @@ free_lun,lun1
 ;
 ;a=dirprg+'dispar3 <tmp.5 >! tmp.6'
 a=dirprg+'dispar3 <tmp.5 >tmp.6'
-;spawn,a
+spawn,a
 ;
 get_lun,lun1
 openr,lun1,'tmp.6'

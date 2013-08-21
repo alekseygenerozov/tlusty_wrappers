@@ -7,7 +7,7 @@ C
 C----------------------- Variable definitions ---------------------------
 C
       INTEGER MRE,NRO,NPHI,NK0,MK,NW,NWO,MKO,NDISK
-      PARAMETER (MRE = 50, NRO = 128, NPHI = 128, NK0=0, MK = 23286, 
+      PARAMETER (MRE = 200, NRO = 128, NPHI = 128, NK0=0, MK = 23286, 
      %           NW  = 10, NWO =   1, MKO  = 531, NDISK =1)
       DOUBLE PRECISION A,AEQ,ALPHA,BETA,DEL,
      %       EPSINU,GAM,L,L2,ONE,OMEGAG,OMEGA,

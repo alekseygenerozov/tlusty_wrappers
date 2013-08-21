@@ -190,8 +190,6 @@ def to_colors(spec, z=0):
 
     return np.log10(colors[0:-1]/colors[1:])
 
-
-
 ##Constructing table of spectra from unit 14 files
 def construct_table(models, logi=False):
     models=np.genfromtxt(models, dtype='string')
@@ -225,22 +223,23 @@ def params_to_spec(params, table, method='', logi=False):
         grid2=griddata(table[0], intens, params, method=method)
     else:
         grid2=griddata(table[0], intens, params)
+    vTb_inv=np.vectorize(Tb_inv)
 
     good=np.empty(len(grid2))
     good.fill(True)
     for i in range(len(grid2)):
         #print np.any(np.isnan(grid2[i]))
         if np.any(np.isnan(grid2[i])):
+            good[i]=False
             grid2[i,0]=nu
             grid2[i,1].fill(params[i,0])
             fcol=np.ones_like(nu)
-            grid2[i,1]=map(Tb_inv, nu, grid2[i,1], fcol)
             
-            good[i]=False
+            grid2[i,1]=vTb_inv(nu, grid2[i,1], fcol)
         elif logi:
             grid2[i,1]=10.**grid2[i,1]
         else:
-            grid2[i,1]=np.array(map(Tb_inv,grid2[i,0],grid2[i,1]))
+            grid2[i,1]=vTb_inv(nu, grid2[i,1])
 
     #Return the interpolated spectra for parameters within our grid
     return (grid2,good)
@@ -323,6 +322,8 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
     dr=np.empty_like(lr)
     for i in range(len(lr)):
         dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
+
+    print Teff,Qg
     
     valid=specs[1]
     specs=specs[0]
@@ -435,7 +436,7 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
 
 
 ##Given a radial disk profile, calculates the spectra of each of the annuli, and then call the kerrtrans9 routine
-def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14, 1.e17]):
+def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14, 1.e17], rmax=1.e4, mu=0.6):
     #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
@@ -450,23 +451,26 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
             global_params[p2[0]]=float(p2[1])
  
     M=global_params['M']
-    mu=global_params['mu']
+    #mu=global_params['mu']
     a=global_params['a']
 
+    
     #Get the radial profile of the disk 
     disk_params=np.genfromtxt(f, skip_header=1)
+    r=disk_params[:, 0]
+    #Radial cut
+    cut=(r<rmax)
+    disk_params=disk_params[cut]
+    #Extract spectra corresponding to disk parameters
     specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi)
     specs=specs[0]
-    # for s in specs[1]:
-    #     invalid=not s
-    # specs=specs[0]
-    # specs2=specs
-    # specs2[invalid,1].fill(0.)
+
 
     nu=specs[0,0,:,-1]
     r=disk_params[:, 0]
     Teff=disk_params[:, 1]
     Qg=disk_params[:, 3]
+
 
     #Creating an input file for kerrtrans9
     bash_command('rm tmp.in')
@@ -500,8 +504,24 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
 
     #Running kerrtrans9 now that input files tmp.in and emrad.in have been generated. Output spectrum to file labelled by
     #disk parameters.
-    bash_command('./kerrtrans9 <tmp.in >sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu))
+    outfile='sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu)
+    bash_command('./kerrtrans9 <tmp.in >'+outfile)
 
+    fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
+    # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+    # #plt.xlabel(r"$\nu$ [hz]")
+    #Plotting the composite disk spectrum
+    ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
+    ax.set_xlim(10.**14, 10.**17)
+    ax.set_ylim(10.**40, 10.**45)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+    nu=np.genfromtxt(outfile, usecols=0)
+    totf=np.genfromtxt(outfile, usecols=1)
+    ax.plot(nu, nu*totf)
+
+    return fig
 
 
 def main():
@@ -513,8 +533,8 @@ def main():
         default='')
     parser.add_argument('-mu', '--mu',
         help='cosine of inslincation angle for the case of a disk ',
-        type=int,
-        default=-1)
+        type=float,
+        default=0.6)
     parser.add_argument('-t', '--test',
         help='directory containing the location of models to test',
         default='')
@@ -533,6 +553,10 @@ def main():
     parser.add_argument('-gr', '--gr',
         help='Specifies that we should use relativistic transfer function to calculate the composite disk spectrum.',
         action='store_true')
+    parser.add_argument('-rmax', '--rmax',
+        help='maximum radius of disk ',
+        type=float,
+        default=1.e4)
     # parser.add_argument('-a', '--animate',
     #     help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.'
     #     a)
@@ -546,6 +570,8 @@ def main():
     skip=args.skip
     mu=args.mu
     gr=args.gr
+    rmax=args.rmax
+
     if d:
         table=construct_table(tablef, logi=logi)
         #pdf_pages = PdfPages('composite.pdf')
@@ -554,7 +580,8 @@ def main():
         for i in range(len(param_files)):
             #print param_files
             if gr:
-                disk_spec_gr(param_files[i], table=table, tablef=tablef, method=method,logi=logi)
+                fig=disk_spec_gr(param_files[i], table=table, tablef=tablef, method=method,logi=logi,rmax=rmax,mu=mu)
+                fig.savefig('composite_'+str(i)+'_gr'+'.pdf')
             else:
                 fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi)
                 fig.savefig('composite_'+str(i)+'.pdf')
