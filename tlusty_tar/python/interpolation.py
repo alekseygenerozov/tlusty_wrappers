@@ -215,16 +215,40 @@ def get_params(file):
     return np.genfromtxt(file)
 
 ##Use table construct spectra from list of parameters
-def params_to_spec(params, table, method='', logi=False):
+def params_to_spec(params, table, method='', logi=False, mu=2):
     intens=table[1]
     nu=table[1][0,0]
-    #Interpolating based on table
+    #Interpolating based on table (interpolating in teff/qg space)
+    print table[0].shape,intens.shape,params.shape
     if method:
-        grid2=griddata(table[0], intens, params, method=method)
+        grid=griddata(table[0], intens, params, method=method)
     else:
-        grid2=griddata(table[0], intens, params)
-    vTb_inv=np.vectorize(Tb_inv)
+        grid=griddata(table[0], intens, params)
 
+    #Angle space
+    #Flag to return flux for all angles
+    if mu>1:
+        grid2=grid
+    #Flag to return flux
+    elif mu<0:
+        grid2=grid[:,:,:,-1] 
+        nu=nu[:,-1]    
+    #Otherwise interpolate the spectrum in mu.
+    else:
+        muarr=np.array([0.0130467357,0.0674683167,0.160295216,\
+            0.283302303,0.425562831,0.574437169, 0.716697697,\
+            0.839704784,0.932531683,0.986953264])
+
+        nu=nu[:,0]
+        grid2=np.empty((len(grid),2, len(nu)))
+        for i in range(len(grid)):
+            grid2[i,0]=nu
+            grid2[i,1]=griddata(muarr, np.transpose(grid[i,1,:,:-1]), [mu])
+
+
+    #Make sure spectrum is converted back to intensity space, also store info about bad spectra (i.e. those that fall outside
+    #the range of the table used.)
+    vTb_inv=np.vectorize(Tb_inv)
     good=np.empty(len(grid2))
     good.fill(True)
     for i in range(len(grid2)):
@@ -239,6 +263,7 @@ def params_to_spec(params, table, method='', logi=False):
         elif logi:
             grid2[i,1]=10.**grid2[i,1]
         else:
+            print grid2.shape
             grid2[i,1]=vTb_inv(nu, grid2[i,1])
 
     #Return the interpolated spectra for parameters within our grid
@@ -259,7 +284,7 @@ def test_spec(f, table=[], tablef='tmpd', method='', logi=False):
     params_s='t'+str(10*params[0])+'m'+str(10*params[1])+'q'+str(10*params[2])
     print params
     params=params[::2]
-    testspec_interp=params_to_spec([params], table, method=method, logi=logi)
+    testspec_interp=params_to_spec([params], table, method=method, logi=logi, mu=-1)
     testspec_interp=testspec_interp[0]
 
     if np.any(np.isnan(testspec_interp)):
@@ -312,23 +337,22 @@ def animate_test_spec(models, table=[], tablef='tmpd', method='', logi=False):
 
 
 ##Computes composite spectrum given array of radii, spectra. Also computes corresponding blackbody spectrum using list of Teff that are passed to the function
-def sum_spec(r, specs, Teff, Qg, M=10.**6): 
+def sum_spec(r, specs, Teff, Qg, mu, M=10.**6): 
     r=r*(G*M*M_sun/c**2)  
     lr=np.log10(r)
     #For now assuming a logarithmically evenly spaced grid--for simplicity
     dlr=np.diff(lr)[0]
-    print dlr
-
+    #Calculate the dr's
     dr=np.empty_like(lr)
     for i in range(len(lr)):
         dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
-
-    print Teff,Qg
     
     valid=specs[1]
+    print valid
     specs=specs[0]
     nu=specs[0,0]
     f=specs[:, 1]
+    print Teff,Qg
 
     bb=np.zeros_like(f[0])
     gb=np.zeros_like(f[0])
@@ -341,10 +365,13 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
         #For every frequncy under consideration
         for j in range(len(nu)):
             #If we have a valid interpolated spectrum...
-            tmpbb=np.empty(11)
-            tmpgb=np.empty(11)
-            tmpbb.fill(rad*(np.pi*Tb_inv(nu[j,0], Teff[i], fcol=1)))
-            tmpgb.fill(rad*(gray.gb(nu[j,0], 10.**Teff[i], 10.**Qg[i])))
+            #tmpbb=np.empty(len(np.atleast_1d(nu[0])))
+            #tmpgb=np.empty(len(np.atleast_1d(nu[0])))
+            tmpbb=(np.pi*rad*(Tb_inv(nu[j], Teff[i], fcol=1)))
+            tmpgb=(rad*(gray.gb(nu[j], 10.**Teff[i], 10.**Qg[i])))
+            if (0<mu<1):
+                tmpbb=tmpbb/np.pi
+                tmpgb=tmpgb/np.pi
 
             bb[j]+=tmpbb
             gb[j]+=tmpgb
@@ -359,7 +386,7 @@ def sum_spec(r, specs, Teff, Qg, M=10.**6):
 
 
 ##Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
+def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6):
     #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
@@ -372,24 +399,32 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
         p2=p.split('=')
         if p2[0] in global_params:
             global_params[p2[0]]=float(p2[1])
-
     M=global_params['M']
-    mu=-1
+    a=0
+    #mu=-1
 
     disk_params=np.genfromtxt(f, skip_header=1)
-    specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi)
+    specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi, mu=mu)
 
+    #Disk parameters
     r=disk_params[:, 0]
     Teff=disk_params[:, 1]
     Qg=disk_params[:, 3]
-
     #Finding the total flux, for the given parameters
-    totf=sum_spec(r, specs, Teff, Qg, M=M)
-    nu=totf[0][:,mu]
-    totfg=totf[1][:,mu]
-    totfb=totf[2][:,mu]
-    totft=totf[3][:,mu]
-    totft2=totf[4][:,mu]
+    totf=sum_spec(r, specs, Teff, Qg, mu, M=M)
+    # nu=totf[0][:,mu]
+    # totfg=totf[1][:,mu]
+    # totfb=totf[2][:,mu]
+    # totft=totf[3][:,mu]
+    # totft2=totf[4][:,mu]
+    inc_factor=1
+    if 0<mu<1:
+        inc_factor=mu*4*np.pi
+    nu=totf[0]
+    totfg=inc_factor*totf[1]
+    totfb=inc_factor*totf[2]
+    totft=inc_factor*totf[3]
+    totft2=inc_factor*totf[4]
 
     # #r=r*(G*M*M_sun/c**2)  
     # lr=np.log10(r)
@@ -400,21 +435,24 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False):
     #     dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
     fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
     # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
-    # #plt.xlabel(r"$\nu$ [hz]")
+    plt.xlabel(r"$\nu$ [hz]")
     #Plotting the composite disk spectrum
     ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
+
     ax.set_xlim(10.**14, 10.**17)
-    ax.set_ylim(10.**40, 10.**45)
+    ax.set_ylim(10.**41, 10.**46)
     ax.set_xscale('log')
     ax.set_yscale('log')
 
-    ax.plot(nu, nu*totfg, label ='graybody')
-    ax.plot(nu, nu*totfb, label ='blackbody')
-    ax.plot(nu, nu*totft, label ='tlusty+bb')
-    ax.plot(nu, nu*totft2,label ='tlusty')
+    #ax.plot(nu, nu*totfg, label ='graybody')
+    ax.plot(nu, nu*totfb,'r-', label ='blackbody')
+    ax.plot(nu, nu*totft,'b-',label ='tlusty +\nblackbody')
+    #ax.plot(nu, nu*totft2,label ='tlusty')
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles[::-1], labels[::-1])
 
+    outfile='sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu)
+    np.savetxt(outfile, np.transpose([nu, totft]))
     # #Plotting the contributions of individual annuli
     # nu=specs[0,0]
     # ax[1].set_ylim(10**-5,10)
@@ -462,7 +500,7 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
     cut=(r<rmax)
     disk_params=disk_params[cut]
     #Extract spectra corresponding to disk parameters
-    specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi)
+    specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi, mu=2)
     specs=specs[0]
 
 
@@ -486,7 +524,6 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
     np.savetxt(kerr_in,[[r[-1],-1.,len(r),4,1]], fmt='%f %f %i %i %i')
     kerr_in.close()
 
-
     #Creating spectral input file for kerrtrans9
     bash_command('rm emrad.in')
     emrad=open('emrad.in','a')
@@ -496,6 +533,7 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
             np.savetxt(emrad, [[get_w(nu[j]), specs[i,1,j,-1]/(4*np.pi)]], fmt='%7.5e')
             intens=specs[i,1,j,:-1]
             pol=np.zeros_like(intens)
+
             intens=np.transpose([intens,pol])
             intens=intens.flatten()
             intens.shape=(2,10)
@@ -504,7 +542,7 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
 
     #Running kerrtrans9 now that input files tmp.in and emrad.in have been generated. Output spectrum to file labelled by
     #disk parameters.
-    outfile='sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu)
+    outfile='sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu)+'_gr'
     bash_command('./kerrtrans9 <tmp.in >'+outfile)
 
     fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
@@ -513,7 +551,7 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
     #Plotting the composite disk spectrum
     ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
     ax.set_xlim(10.**14, 10.**17)
-    ax.set_ylim(10.**40, 10.**45)
+    ax.set_ylim(10.**35, 10.**42)
     ax.set_xscale('log')
     ax.set_yscale('log')
 
@@ -581,10 +619,10 @@ def main():
             #print param_files
             if gr:
                 fig=disk_spec_gr(param_files[i], table=table, tablef=tablef, method=method,logi=logi,rmax=rmax,mu=mu)
-                fig.savefig('composite_'+str(i)+'_gr'+'.pdf')
+                fig.savefig('composite_'+str(i)+'_gr'+'.png')
             else:
-                fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi)
-                fig.savefig('composite_'+str(i)+'.pdf')
+                fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi,mu=mu)
+                fig.savefig('composite_'+str(i)+'.png')
             #pdf_pages.savefig(fig)
         #pdf_pages.close()
     elif t:
