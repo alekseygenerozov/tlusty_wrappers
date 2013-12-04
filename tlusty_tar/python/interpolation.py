@@ -20,6 +20,7 @@ import warnings
 import shlex
 from types import*
 
+import colorsys
 
 
 ##Defining physical constants
@@ -106,23 +107,94 @@ def get_spec(file,  mu=-1, nmu=10):
 
 
 # Regrid spectrum in wavelength space. Want all spectra to be on the same grid in wavelength space when we interpolate; In frequency the default limits for the 
-# the wavelength correspond to 2.4e14 and 5e19 Hz.
-def regrid(spec, wlo=30, whi=3.e5, nws=300):
-    wgrid=np.log(wlo)+np.log(whi/wlo)*np.arange(0, nws)/(nws-1)
-    newspec=griddata(np.log(spec[0]), spec[1], wgrid, fill_value=1.e-36,method='linear')
+# the wavelength correspond to...If the keep keyword argument is set, then we simply keep the old frequency grid.
+def regrid(spec, wlo=30, whi=3.e5, nws=300, keep=False):
+    #Wavelength grid onto which we would like to interpolate. 
+    wgrid=[1.47712, 1.49495, 1.51278, 1.53061, 1.54844, 1.56627, 1.5841, \
+1.60193, 1.61976, 1.63759, 1.65542, 1.67325, 1.69108, 1.70891, \
+1.72674, 1.74457, 1.7624, 1.78023, 1.79806, 1.81589, 1.83372, \
+1.85155, 1.86938, 1.88721, 1.90504, 1.92288, 1.94071, 1.95854, \
+1.97637, 1.9942, 2.01203, 2.02986, 2.04769, 2.06552, 2.08335, \
+2.10118, 2.11901, 2.13684, 2.15467, 2.1725, 2.19033, 2.20816, \
+2.22599, 2.24382, 2.26165, 2.27948, 2.29731, 2.31514, 2.33297, \
+2.3508, 2.36231, 2.36961, 2.37691, 2.38421, 2.39151, 2.39881, 2.4061, \
+2.4134, 2.4207, 2.428, 2.4353, 2.4426, 2.4499, 2.4572, 2.4645, \
+2.4718, 2.4791, 2.4864, 2.4937, 2.50099, 2.50829, 2.51559, 2.52289, \
+2.53019, 2.53749, 2.54479, 2.55209, 2.55939, 2.56669, 2.57399, \
+2.58129, 2.58859, 2.59589, 2.60318, 2.61048, 2.61778, 2.62508, \
+2.63238, 2.63968, 2.64698, 2.65428, 2.66158, 2.66888, 2.67618, \
+2.68348, 2.69078, 2.69807, 2.69865, 2.70733, 2.71463, 2.72193, \
+2.72923, 2.73653, 2.74383, 2.75113, 2.75843, 2.76573, 2.77302, \
+2.78032, 2.78762, 2.79492, 2.80222, 2.80952, 2.81682, 2.82412, \
+2.83142, 2.83872, 2.84602, 2.85332, 2.86062, 2.86791, 2.87521, \
+2.88251, 2.88981, 2.89711, 2.90441, 2.91171, 2.91901, 2.92631, \
+2.93361, 2.94091, 2.94821, 2.95551, 2.95568, 2.96437, 2.97167, \
+2.97897, 2.98627, 2.99357, 3.00087, 3.00816, 3.01546, 3.02276, \
+3.03006, 3.03736, 3.04466, 3.05196, 3.05926, 3.06656, 3.07386, \
+3.08116, 3.08846, 3.09576, 3.10305, 3.11035, 3.11765, 3.12495, \
+3.13225, 3.13955, 3.14685, 3.15415, 3.16145, 3.16875, 3.17605, \
+3.18335, 3.19065, 3.19795, 3.20524, 3.21254, 3.21984, 3.22714, \
+3.23444, 3.24174, 3.24904, 3.25634, 3.26364, 3.27094, 3.27824, \
+3.28554, 3.29284, 3.30013, 3.30743, 3.30787, 3.31655, 3.32385, \
+3.33115, 3.33845, 3.34575, 3.35305, 3.36035, 3.36765, 3.37495, \
+3.38225, 3.38954, 3.39684, 3.40414, 3.41144, 3.41874, 3.42604, \
+3.43334, 3.44064, 3.44794, 3.45524, 3.46254, 3.46984, 3.47714, \
+3.48443, 3.49173, 3.49903, 3.50633, 3.51363, 3.52093, 3.52823, \
+3.53553, 3.54283, 3.55013, 3.55743, 3.55774, 3.56643, 3.57373, \
+3.58103, 3.58833, 3.59563, 3.60293, 3.61022, 3.61752, 3.62482, \
+3.63212, 3.63942, 3.64672, 3.65402, 3.66132, 3.66862, 3.67592, \
+3.68322, 3.69052, 3.69782, 3.70511, 3.71241, 3.71971, 3.72701, \
+3.73431, 3.74161, 3.74891, 3.75621, 3.76351, 3.77081, 3.77811, \
+3.78541, 3.79271, 3.80001, 3.8073, 3.8146, 3.8219, 3.8292, 3.8365, \
+3.8438, 3.8511, 3.8584, 3.8657, 3.873, 3.8803, 3.8876, 3.8949, \
+3.90219, 3.9101, 3.91879, 3.92609, 3.93339, 3.94069, 3.94799, \
+3.95529, 3.96259, 3.96988, 3.97718, 3.98448, 3.99178, 3.99908, \
+4.00638, 4.01368, 4.02098, 4.02828, 4.03558, 4.04288, 4.05018, \
+4.05748, 4.06477, 4.07207, 4.07937, 4.08667, 4.09397, 4.10127, \
+4.10857, 4.11587, 4.12317, 4.13047, 4.13777, 4.14507, 4.15237, \
+4.15998, 4.16867, 4.17597, 4.18327, 4.19057, 4.19786, 4.20516, \
+4.21246, 4.21976, 4.22706, 4.23436, 4.24166, 4.24896, 4.25626, \
+4.26356, 4.27086, 4.27816, 4.28546, 4.29275, 4.30005, 4.30735, \
+4.31465, 4.32195, 4.32925, 4.33655, 4.34385, 4.35115, 4.3538, \
+4.36249, 4.36979, 4.37709, 4.38439, 4.39168, 4.39898, 4.40628, \
+4.41358, 4.42088, 4.42818, 4.43548, 4.44278, 4.45008, 4.45738, \
+4.46468, 4.47198, 4.47928, 4.48657, 4.49387, 4.50117, 4.50847, \
+4.51216, 4.52085, 4.52815, 4.53545, 4.54275, 4.55005, 4.55735, \
+4.56465, 4.57194, 4.57924, 4.58654, 4.59384, 4.60114, 4.60844, \
+4.61574, 4.62304, 4.63034, 4.63764, 4.64606, 4.65474, 4.66204, \
+4.66934, 4.67664, 4.68394, 4.69124, 4.69854, 4.70584, 4.71314, \
+4.72044, 4.72774, 4.73504, 4.74233, 4.74963, 4.75693, 4.76204, \
+4.76423, 4.77073, 4.77791, 4.78521, 4.79263, 4.80019, 4.80787, \
+4.8157, 4.82367, 4.83179, 4.84006, 4.8485, 4.8571, 4.86588, 4.87483, \
+4.88398, 4.89332, 4.90287, 4.91263, 4.92261, 4.93284, 4.9433, \
+4.95403, 4.96503, 4.97631, 4.98789, 4.9998, 5.01203, 5.02463, \
+5.03759, 5.05096, 5.06475, 5.079, 5.09373, 5.10897, 5.12477, 5.14116, \
+5.1582, 5.17594, 5.19443, 5.21374, 5.23395, 5.25515, 5.27744, 5.30093,
+ 5.32576, 5.35211, 5.38015, 5.41013, 5.44234, 5.47712]
+    nws=len(wgrid)
+    # if keep:
+    #     wgrid=np.log(spec[0])
+    #     nws=len(wgrid)
+    # else:
+    #     wgrid=np.log(wlo)+np.log(whi/wlo)*np.arange(0, nws)/(nws-1)
+    newspec=griddata(np.log10(spec[0]), spec[1], wgrid, fill_value=1.e-36,method='linear')
     newspec=newspec[::-1]
 
-    wgrid=np.exp(wgrid)
+
+    wgrid=10.**(np.array(wgrid))
     freq=map(get_freq, wgrid)
     freq=freq[::-1]
     
     freq2=np.empty_like(newspec)
     for i in range(len(freq2)):
         freq2[i].fill(freq[i])
+        
     spec=np.vstack([freq2, newspec])
     spec.shape=(2,nws,11)
 
     return spec
+
+ 
 
 
 
@@ -349,7 +421,11 @@ def sum_spec(r, specs, Teff, Qg, mu, M=10.**6):
     
     valid=specs[1]
     print valid
+
     specs=specs[0]
+    specs=np.array(specs)
+    print specs[0].shape
+
     nu=specs[0,0]
     f=specs[:, 1]
     print Teff,Qg
@@ -373,20 +449,22 @@ def sum_spec(r, specs, Teff, Qg, mu, M=10.**6):
                 tmpbb=tmpbb/np.pi
                 tmpgb=tmpgb/np.pi
 
-            bb[j]+=tmpbb
-            gb[j]+=tmpgb
+
             if valid[i]:
+                bb[j]+=tmpbb
+                gb[j]+=tmpgb
                 L[j] =(L[j] +rad*f[i,j])
                 L2[j]=(L2[j]+rad*f[i,j])
             #Otherwise add bb flux to L but not L2
-            else:
-                L[j]+=(tmpbb)
+            # else:
+            #     L[j]+=(tmpbb)
 
     return (nu, gb, bb, L, L2) 
 
 
 ##Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6):
+def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6, ymax=10.**46, ind=False):
+    #ind=False
     #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
@@ -402,21 +480,21 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6):
     M=global_params['M']
     a=0
     #mu=-1
-
+    print f
     disk_params=np.genfromtxt(f, skip_header=1)
+    print disk_params
     specs=params_to_spec(disk_params[:, 1:4:2], table, method=method, logi=logi, mu=mu)
 
     #Disk parameters
     r=disk_params[:, 0]
     Teff=disk_params[:, 1]
     Qg=disk_params[:, 3]
+
+
     #Finding the total flux, for the given parameters
     totf=sum_spec(r, specs, Teff, Qg, mu, M=M)
-    # nu=totf[0][:,mu]
-    # totfg=totf[1][:,mu]
-    # totfb=totf[2][:,mu]
-    # totft=totf[3][:,mu]
-    # totft2=totf[4][:,mu]
+    specs=specs[0]
+
     inc_factor=1
     if 0<mu<1:
         inc_factor=mu*4*np.pi
@@ -426,30 +504,73 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6):
     totft=inc_factor*totf[3]
     totft2=inc_factor*totf[4]
 
-    # #r=r*(G*M*M_sun/c**2)  
-    # lr=np.log10(r)
-    # #For now assuming a logarithmically evenly spaced grid--for simplicity
-    # dlr=np.diff(lr)[0]
-    # dr=np.empty_like(r)
-    # for i in range(len(lr)):
-    #     dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
-    fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
-    # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
-    plt.xlabel(r"$\nu$ [hz]")
-    #Plotting the composite disk spectrum
-    ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
+    #r=r*(G*M*M_sun/c**2)  
+    lr=np.log10(r)
+    #For now assuming a logarithmically evenly spaced grid--for simplicity
+    dlr=np.diff(lr)[0]
+    dr=np.empty_like(r)
+    for i in range(len(lr)):
+        dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
+    if ind:
+        fig,ax=plt.subplots(nrows=2, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
+        # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+        plt.xlabel(r"$\nu$ [hz]")
+        #Plotting the composite disk spectrum
+        ax[0].set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
 
-    ax.set_xlim(10.**14, 10.**17)
-    ax.set_ylim(10.**41, 10.**46)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
+        ax[0].set_xlim(10.**14, 10.**17)
+        ax[0].set_ylim(10.**-5*ymax, ymax)
+        ax[0].set_xscale('log')
+        ax[0].set_yscale('log')
 
-    #ax.plot(nu, nu*totfg, label ='graybody')
-    ax.plot(nu, nu*totfb,'r-', label ='blackbody')
-    ax.plot(nu, nu*totft,'b-',label ='tlusty +\nblackbody')
-    #ax.plot(nu, nu*totft2,label ='tlusty')
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[::-1], labels[::-1])
+        #ax.plot(nu, nu*totfg, label ='graybody')
+        ax[0].plot(nu, nu*totfb,'r-', label ='blackbody')
+        ax[0].plot(nu, nu*totft,'b-',label ='tlusty +\nblackbody')
+        #ax.plot(nu, nu*totft2,label ='tlusty')
+        handles, labels = ax[0].get_legend_handles_labels()
+        ax[0].legend(handles[::-1], labels[::-1], bbox_to_anchor=(1, 1), prop={'size':6})
+
+        #nu=specs[0,0]
+        ax[1].set_ylim(10**-5,10)
+        ax[1].set_xlim(10**14, 10**17)
+        ax[1].set_xscale('log')
+        ax[1].set_yscale('log')
+        #ax[1].set_ylabel(r"F$_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$]")
+        wl=np.array(map(get_w, nu))
+        valid=np.empty(len(specs))
+
+        for i in range(len(specs)):
+            color=colorsys.hsv_to_rgb(i*1./len(specs), 1., 1.)
+            specs[i][1]=2*np.pi*r[i]*dr[i]*specs[i][1]
+
+            ax[1].plot(nu, specs[i][1], color=color, label=str(r[i]))
+            handles, labels = ax[1].get_legend_handles_labels()
+            ax[1].legend(handles[::-1], labels[::-1], bbox_to_anchor=(1, 1), prop={'size':6})
+            valid[i]=not np.any(np.isnan(specs[i][1]))
+
+        
+
+
+
+
+    else:
+        fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
+        # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+        plt.xlabel(r"$\nu$ [hz]")
+        #Plotting the composite disk spectrum
+        ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
+
+        ax.set_xlim(10.**14, 10.**17)
+        ax.set_ylim(10.**-5*ymax, ymax)
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+
+        #ax.plot(nu, nu*totfg, label ='graybody')
+        ax.plot(nu, nu*totfb,'r-', label ='blackbody')
+        ax.plot(nu, nu*totft,'b-',label ='tlusty +\nblackbody')
+        #ax.plot(nu, nu*totft2,label ='tlusty')
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles[::-1], labels[::-1])
 
     outfile='sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu)
     np.savetxt(outfile, np.transpose([nu, totft]))
@@ -470,11 +591,11 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6):
     # ax[0].plot(nu,2.6*np.mean(specs[valid==1,1], axis=0))
     # ax[1].plot(wl,10**6*np.mean(specs[valid==1,1]/wl**2, axis=0))
     plt.close()
-    return fig
+    return [[nu,totfb],[nu,totfg],[nu,totft]]
 
 
 ##Given a radial disk profile, calculates the spectra of each of the annuli, and then call the kerrtrans9 routine
-def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14, 1.e17], rmax=1.e4, mu=0.6):
+def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14, 1.e17], rmax=1.e4, mu=0.6, ymax=1e46):
     #Construct table if necessary
     if table==[]:
         table=construct_table(tablef, logi=logi)
@@ -551,7 +672,7 @@ def disk_spec_gr(f, table=[], tablef='tmpd', method='', logi=False, fobs=[1.e14,
     #Plotting the composite disk spectrum
     ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
     ax.set_xlim(10.**14, 10.**17)
-    ax.set_ylim(10.**35, 10.**42)
+    ax.set_ylim(10.**-5*ymax, ymax)
     ax.set_xscale('log')
     ax.set_yscale('log')
 
@@ -595,6 +716,14 @@ def main():
         help='maximum radius of disk ',
         type=float,
         default=1.e4)
+    parser.add_argument('-ymax', '--ymax',
+        help='maximum y for plotting ',
+        type=float,
+        default=10.**46)
+    parser.add_argument('-ind', '--individual',
+        help='specifies whether to plot individual annuli',
+        action='store_true')
+
     # parser.add_argument('-a', '--animate',
     #     help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.'
     #     a)
@@ -609,22 +738,64 @@ def main():
     mu=args.mu
     gr=args.gr
     rmax=args.rmax
+    ymax=args.ymax
+    ind=args.individual
 
     if d:
         table=construct_table(tablef, logi=logi)
         #pdf_pages = PdfPages('composite.pdf')
         param_files=np.genfromtxt(d, dtype=str)
         param_files=np.atleast_1d(param_files)
+
+       
+        fig,ax=plt.subplots()
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlabel(r"$\nu$ [Hz]")
+        ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
+        ax.set_xlim(10.**14, 10.**17)
+        ax.set_ylim(10.**-5*ymax, ymax)
+
+        fig2,ax2=plt.subplots()
+        ax2.set_xscale('log')
+        ax2.set_yscale('log')
+        ax2.set_xlabel(r"$\nu$ [Hz]")
+        ax2.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
+        ax2.set_xlim(10.**14, 10.**17)
+        ax2.set_ylim(10.**-5*ymax, ymax)
+
+        cols=['k','0.5','r']
+        syms=['-','--', '-.',':']
+        # cols2=['r', 'b', 'k', 'g']
+        cols2=['r']
+        
         for i in range(len(param_files)):
             #print param_files
             if gr:
-                fig=disk_spec_gr(param_files[i], table=table, tablef=tablef, method=method,logi=logi,rmax=rmax,mu=mu)
+                fig=disk_spec_gr(param_files[i], table=table, tablef=tablef, method=method,logi=logi,rmax=rmax,mu=mu,ymax=ymax)
                 fig.savefig('composite_'+str(i)+'_gr'+'.png')
             else:
-                fig=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi,mu=mu)
-                fig.savefig('composite_'+str(i)+'.png')
-            #pdf_pages.savefig(fig)
-        #pdf_pages.close()
+                spec=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi,mu=mu,ymax=ymax,ind=ind)
+                #print spec[1][1],spec[0][1]
+                for j in range(3):
+                    #plt.loglog()
+                    #plt.axis([10**14, 10**17, 10**-5*ymax, ymax])
+                    ax.set_xlim(10.**14, 10.**17)
+                    ax.set_ylim(10.**-5*ymax, ymax)
+                    ax.set_xscale('log')
+                    ax.set_yscale('log')
+                    ax.set_xlabel(r"$\nu$ [Hz]")
+                    ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
+
+                    ax.plot(spec[j][0],spec[j][0]*spec[j][1], '-', color=cols[j])
+                    if j==2:
+                        ax2.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols2[i%len(cols2)])
+                # plt.plot(spec[1][0],spec[1][0]*spec[1][1])
+                # plt.plot(spec[2][0],spec[2][0]*spec[2][1])
+                fig.savefig('composite_'+str(i)+'.eps')
+                ax.cla()
+
+        fig2.savefig('composite.eps')
     elif t:
         table=construct_table(tablef, logi=logi)
         # pdf_pages = PdfPages('interp_test.pdf')
@@ -703,79 +874,3 @@ if __name__ == '__main__':
 
     
 
-# def Knu(es, f):
-#     return  np.sqrt(-4.*(-1. + 2.*es - 1.*es**2)**6 + \
-#     (2. - 12.*es + 30.*es**2 - 40.*es**3 + 30.*es**4 - 12.*es**5 + \
-#     2.*es**6 - 27.*es**2*f + 108.*es**3*f - 162.*es**4*f + 108.*es**5*f - \
-#     27.*es**6*f)**2)
-    
-
-# <codecell>
-
-# table=construct_table('tmpd')
-# disk_params=get_params('dparams_pert_total')
-
-
-# specs=params_to_spec(disk_params, table)
-
-# loglog()
-# figsize(20, 8)
-
-# r=disk_params[:, 0:2]
-# Teff=disk_params[:, 2]
-
-
-# totf=sum_spec(r, specs, Teff)
-# totf1=totf[1]
-# totf2=totf[0]
-
-# grayf=np.genfromtxt("graydisk")
-
-
-# peak=10.**44
-# #peak=np.max([max1, max2])
-# #totf2=sum_spec(r[2:], specs[2:])
-# #totf3=sum_spec(r[5:], specs[5:])
-
-# loglog()
-# figsize(20, 8)
-
-# xlabel("nu [hz]")
-# ylabel("nu L_nu [ergs/s]")
-
-# axis([10.**14, 2*10.**18, 10**-6*peak, 2*peak]) 
-
-# plot(totf1[0], totf1[0]*totf1[1])
-# plot(totf2[0], totf2[0]*totf2[1])
-# plot(grayf[:, 0], grayf[:, 0]*grayf[:, 1])
-# #plot(totf2[0], totf2[0]*totf2[1])
-# #plot(totf3[0], totf3[0]*totf3[1])
-
-# savefig("composite_pert.pdf")
-
-
-
-
-   # colors=np.empty([5,4])
-    # for z in range(0,5):
-    #     colors[z]=to_colors(np.array([nu, totft]), z=z)
-
-
-    # fig=plt.figure()
-    # ax=fig.add_subplot(221)
-    # ax.set_xlim(-1,5)
-    # ax.set_ylim(-1,3)
-    # ax.plot(colors[0,:], colors[1,:], 'rs')
-
-    # ax=fig.add_subplot(222)
-    # ax.set_xlim(-1,3)
-    # ax.set_ylim(-1,3)
-    # ax.plot(colors[1,:], colors[2,:], 'rs')
-
-    # ax=fig.add_subplot(223)
-    # ax.set_xlim(-1,3)
-    # ax.set_ylim(-1,2)
-    # ax.plot(colors[2,:], colors[3,:], 'rs')
-    # plt.show()
-    # plt.close()
-    # np.savetxt('spec', np.transpose(np.array([nu, totft])))

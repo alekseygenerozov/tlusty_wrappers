@@ -11,8 +11,9 @@ from types import*
 ##Run a command from the bash shell
 def bash_command(cmd):
      process=subprocess.Popen(['/bin/bash', '-c', cmd],  stdout=subprocess.PIPE)
-     process.wait()
-     return process
+     return process.communicate()[0]
+     # process.wait()
+     # return process
 
 ##Routine to parse atmosphere
 def parse_atm(f='fort.7'):
@@ -140,7 +141,7 @@ def setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy=True, tailname='tail
             #Check if unit 7 file is present in the specified in location.      
             process=bash_command('check ' + model + '/fort.7')
             #If it is not found then return empty string as flag
-            if len(process.stdout.readlines())==0:
+            if len(process)==0:
                 loc=''
                 return loc
             bash_command('cp ' + model + '/fort.7 ' + './')
@@ -306,7 +307,7 @@ def clean(outdir, nlte, remove=False):
     process=bash_command('check ' + dest)
     # If the remove flag has not been set and the destination already exists, we should keep trying extensions for destination 
     # until we obtain a destination name that does not already exist.
-    while len(process.stdout.readlines())!=0 and not remove:
+    while len(process)!=0 and not remove:
         dest=dest_orig+"_"+str(i)
         process=bash_command('check ' + dest)
         i+=1
@@ -330,6 +331,8 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
     log_teff=params[0]
     log_dmtot=params[1]
     log_qgrav=params[2]
+
+    print nlte
 
     outdir=setup(log_qgrav, log_teff, log_dmtot, nlte, model, copy, tailname,value)
     if not outdir:
