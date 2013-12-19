@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
 
-kes=0.4
+kes=0.2*0.4
 h = 6.63*10.**-27;
 kb=1.38*10**-16
 c=3.*10**10

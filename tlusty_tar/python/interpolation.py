@@ -5,7 +5,8 @@ import numpy as np
 import numpy.ma as ma
 import re
 
-from matplotlib import rc
+import matplotlib as mpl
+#from matplotlib import rc
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.animation as animation
@@ -21,6 +22,9 @@ import shlex
 from types import*
 
 import colorsys
+
+
+
 
 
 ##Defining physical constants
@@ -511,85 +515,11 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6, ymax=10
     dr=np.empty_like(r)
     for i in range(len(lr)):
         dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
-    if ind:
-        fig,ax=plt.subplots(nrows=2, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
-        # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
-        plt.xlabel(r"$\nu$ [hz]")
-        #Plotting the composite disk spectrum
-        ax[0].set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
 
-        ax[0].set_xlim(10.**14, 10.**17)
-        ax[0].set_ylim(10.**-5*ymax, ymax)
-        ax[0].set_xscale('log')
-        ax[0].set_yscale('log')
-
-        #ax.plot(nu, nu*totfg, label ='graybody')
-        ax[0].plot(nu, nu*totfb,'r-', label ='blackbody')
-        ax[0].plot(nu, nu*totft,'b-',label ='tlusty +\nblackbody')
-        #ax.plot(nu, nu*totft2,label ='tlusty')
-        handles, labels = ax[0].get_legend_handles_labels()
-        ax[0].legend(handles[::-1], labels[::-1], bbox_to_anchor=(1, 1), prop={'size':6})
-
-        #nu=specs[0,0]
-        ax[1].set_ylim(10**-5,10)
-        ax[1].set_xlim(10**14, 10**17)
-        ax[1].set_xscale('log')
-        ax[1].set_yscale('log')
-        #ax[1].set_ylabel(r"F$_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$]")
-        wl=np.array(map(get_w, nu))
-        valid=np.empty(len(specs))
-
-        for i in range(len(specs)):
-            color=colorsys.hsv_to_rgb(i*1./len(specs), 1., 1.)
-            specs[i][1]=2*np.pi*r[i]*dr[i]*specs[i][1]
-
-            ax[1].plot(nu, specs[i][1], color=color, label=str(r[i]))
-            handles, labels = ax[1].get_legend_handles_labels()
-            ax[1].legend(handles[::-1], labels[::-1], bbox_to_anchor=(1, 1), prop={'size':6})
-            valid[i]=not np.any(np.isnan(specs[i][1]))
-
-        
-
-
-
-
-    else:
-        fig,ax=plt.subplots(nrows=1, ncols=1, figsize=(6,6), subplot_kw=dict(adjustable='datalim'))
-        # # #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
-        plt.xlabel(r"$\nu$ [hz]")
-        #Plotting the composite disk spectrum
-        ax.set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
-
-        ax.set_xlim(10.**14, 10.**17)
-        ax.set_ylim(10.**-5*ymax, ymax)
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-
-        #ax.plot(nu, nu*totfg, label ='graybody')
-        ax.plot(nu, nu*totfb,'r-', label ='blackbody')
-        ax.plot(nu, nu*totft,'b-',label ='tlusty +\nblackbody')
-        #ax.plot(nu, nu*totft2,label ='tlusty')
-        handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles[::-1], labels[::-1])
 
     outfile='sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu)
     np.savetxt(outfile, np.transpose([nu, totft]))
-    # #Plotting the contributions of individual annuli
-    # nu=specs[0,0]
-    # ax[1].set_ylim(10**-5,10)
-    # ax[1].set_xlim(10**14, 10**17)
-    # ax[1].set_xscale('log')
-    # ax[1].set_yscale('log')
-    # #ax[1].set_ylabel(r"F$_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$]")
-    # wl=np.array(map(get_w, nu))
-    # valid=np.empty(len(specs))
-    # for i in range(len(specs)):
-    #     specs[i,1]=2*np.pi*r[i]*dr[i]*specs[i,1]
-    #     ax[1].plot(nu, specs[i, 1])
-    #     valid[i]=not np.any(np.isnan(specs[i,1]))
-    
-    # ax[0].plot(nu,2.6*np.mean(specs[valid==1,1], axis=0))
-    # ax[1].plot(wl,10**6*np.mean(specs[valid==1,1]/wl**2, axis=0))
+
     plt.close()
     return [[nu,totfb],[nu,totfg],[nu,totft]]
 
@@ -719,10 +649,14 @@ def main():
     parser.add_argument('-ymax', '--ymax',
         help='maximum y for plotting ',
         type=float,
-        default=10.**46)
+        default=10.**45)
     parser.add_argument('-ind', '--individual',
         help='specifies whether to plot individual annuli',
         action='store_true')
+    parser.add_argument('-bb', '--bb',
+        help='Whether we should overplot blackbody and graybody spectra',
+        action='store_true')
+
 
     # parser.add_argument('-a', '--animate',
     #     help='For the case of test spectra, specifies that a movie should be made rather than a static pdf.'
@@ -740,6 +674,7 @@ def main():
     rmax=args.rmax
     ymax=args.ymax
     ind=args.individual
+    bb=args.bb
 
     if d:
         table=construct_table(tablef, logi=logi)
@@ -747,27 +682,33 @@ def main():
         param_files=np.genfromtxt(d, dtype=str)
         param_files=np.atleast_1d(param_files)
 
+        mpl.rcParams['axes.labelsize']=20
+        mpl.rcParams['xtick.labelsize']=20
+        mpl.rcParams['ytick.labelsize']=20
+
        
-        fig,ax=plt.subplots()
+        fig,ax=plt.subplots(figsize=(10,8))
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.set_xlabel(r"$\nu$ [Hz]")
         ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
-        ax.set_xlim(10.**14, 10.**17)
+        ax.set_xlim(10.**14, 3*10.**16)
         ax.set_ylim(10.**-5*ymax, ymax)
 
-        fig2,ax2=plt.subplots()
-        ax2.set_xscale('log')
-        ax2.set_yscale('log')
-        ax2.set_xlabel(r"$\nu$ [Hz]")
-        ax2.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
-        ax2.set_xlim(10.**14, 10.**17)
-        ax2.set_ylim(10.**-5*ymax, ymax)
+        # fig2,ax2=plt.subplots(figsize=(10,8))
+        # ax2.set_xscale('log')
+        # ax2.set_yscale('log')
+        # ax2.set_xlabel(r"$\nu$ [Hz]")
+        # ax2.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
+        # ax2.set_xlim(10.**14, 10.**17)
+        # ax2.set_ylim(10.**-5*ymax, ymax)
 
         cols=['k','0.5','r']
-        syms=['-','--', '-.',':']
-        # cols2=['r', 'b', 'k', 'g']
-        cols2=['r']
+        syms=['-','--']
+        # if not bb:
+        #     cols=['r', 'b', 'k', 'm']
+        # cols2=['r', 'b', 'k', 'm']
+        #cols2=['r']
         
         for i in range(len(param_files)):
             #print param_files
@@ -780,22 +721,24 @@ def main():
                 for j in range(3):
                     #plt.loglog()
                     #plt.axis([10**14, 10**17, 10**-5*ymax, ymax])
-                    ax.set_xlim(10.**14, 10.**17)
-                    ax.set_ylim(10.**-5*ymax, ymax)
-                    ax.set_xscale('log')
-                    ax.set_yscale('log')
-                    ax.set_xlabel(r"$\nu$ [Hz]")
-                    ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
+                    # ax.set_xlim(10.**14, 3*10.**16)
+                    # ax.set_ylim(10.**-5*ymax, ymax)
+                    # ax.set_xscale('log')
+                    # ax.set_yscale('log')
+                    # ax.set_xlabel(r"$\nu$ [Hz]")
+                    # ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
 
-                    ax.plot(spec[j][0],spec[j][0]*spec[j][1], '-', color=cols[j])
-                    if j==2:
-                        ax2.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols2[i%len(cols2)])
+                    # ax.plot(spec[j][0],spec[j][0]*spec[j][1], '-', color=cols[j])
+                    if bb or j==2:
+                        ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j%len(cols)])
+                    # else if j==2:
+                    #     ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[i%len(cols)])
                 # plt.plot(spec[1][0],spec[1][0]*spec[1][1])
                 # plt.plot(spec[2][0],spec[2][0]*spec[2][1])
-                fig.savefig('composite_'+str(i)+'.eps')
-                ax.cla()
+                # fig.savefig('composite_'+str(i)+'.eps')
+                # ax.cla()
 
-        fig2.savefig('composite.eps')
+        fig.savefig('composite.eps')
     elif t:
         table=construct_table(tablef, logi=logi)
         # pdf_pages = PdfPages('interp_test.pdf')
