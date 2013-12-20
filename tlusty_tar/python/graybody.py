@@ -2,16 +2,16 @@ import numpy as np
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
 
-kes=0.2*0.4
+por=0.2
+kes=0.4*por
 h = 6.63*10.**-27;
 kb=1.38*10**-16
 c=3.*10**10
+gamma=4./3.
+sigma=5.67*10**-5
+kr=1.6*10**24
 
 def xi(t, nu):
-    # kes=0.4
-    # h = 6.63*10.**-27;
-    # kb=1.38*10**-16
-    # c=3.*10**10
     return h*nu/(kb*t)
 
 def fnu(t, nu):
@@ -49,7 +49,8 @@ def eps(es, t, nu):
    
 def ks(tp, qg):
     np.seterr(all='raise')
-    return 4.7*10.**20.*np.sqrt(qg)*tp**(-15./4.)
+    norm=np.sqrt(140.*c*kr/(gamma*sigma*kes))
+    return norm*np.sqrt(qg)*tp**(-15./4.)
 
 def es(tp, qg):
     # kes=0.4
@@ -61,16 +62,8 @@ def Chi(es):
 def F(tp, teff, qg):
     return teff-tp*(Chi(es(tp, qg)))**0.25
 
-
-# def bb(freq, Tb, fcol=2):
-#     if np.isinf(np.exp(h*freq/kb/fcol/10**Tb)):
-#         return 0
-#     try:
-#         return (2./fcol**4)*(h*(freq**3)/c/c)/(np.exp(h*freq/kb/fcol/Tb)-1)
-#     except:
-#         return 0
-   
-#Standard blacbody
+  
+#Standard blackbody
 def bb(nu, t):
     try:
         return 2*h*nu**3/c**2/(np.exp(h*nu/(kb*t))-1)

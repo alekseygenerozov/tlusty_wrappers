@@ -10,6 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.animation as animation
+import matplotlib.gridspec as gridspec
 
 import argparse
 import subprocess
@@ -618,8 +619,8 @@ def main():
         description='Either takes list of disk parameters and computes composite disk spectrum from table or compares spectra interpolated'+
           ' from table to those in a test directory')
     parser.add_argument('-d', '--disk',
-        help='file containing list of disk profile files ',
-        default='')
+        help='file(s) containing list of disk profile files ',
+        nargs='*')
     parser.add_argument('-mu', '--mu',
         help='cosine of inslincation angle for the case of a disk ',
         type=float,
@@ -677,67 +678,58 @@ def main():
     bb=args.bb
 
     if d:
-        table=construct_table(tablef, logi=logi)
-        #pdf_pages = PdfPages('composite.pdf')
-        param_files=np.genfromtxt(d, dtype=str)
-        param_files=np.atleast_1d(param_files)
+        #Set-up for plotting spectra
+        plt.close('all')
+        #fig,ax=plt.subplots(len(d), figsize=(10,8*len(d)), sharex=True)
+        gs1 = gridspec.GridSpec(1, len(d))
+        fig=plt.figure(figsize=(10*len(d), 10))
 
-        mpl.rcParams['axes.labelsize']=20
-        mpl.rcParams['xtick.labelsize']=20
-        mpl.rcParams['ytick.labelsize']=20
-
-       
-        fig,ax=plt.subplots(figsize=(10,8))
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-        ax.set_xlabel(r"$\nu$ [Hz]")
-        ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
-        ax.set_xlim(10.**14, 3*10.**16)
-        ax.set_ylim(10.**-5*ymax, ymax)
-
-        # fig2,ax2=plt.subplots(figsize=(10,8))
-        # ax2.set_xscale('log')
-        # ax2.set_yscale('log')
-        # ax2.set_xlabel(r"$\nu$ [Hz]")
-        # ax2.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
-        # ax2.set_xlim(10.**14, 10.**17)
-        # ax2.set_ylim(10.**-5*ymax, ymax)
-
+        
+        mpl.rcParams['axes.labelsize']=40
+        mpl.rcParams['xtick.labelsize']=40
+        mpl.rcParams['ytick.labelsize']=40
         cols=['k','0.5','r']
         syms=['-','--']
-        # if not bb:
-        #     cols=['r', 'b', 'k', 'm']
-        # cols2=['r', 'b', 'k', 'm']
-        #cols2=['r']
+
+        # ax[-1].set_xlabel(r"$\nu$ [Hz]")
+        # ax[-1].set_xlim(10.**14, 3.*10**16)
         
-        for i in range(len(param_files)):
-            #print param_files
-            if gr:
-                fig=disk_spec_gr(param_files[i], table=table, tablef=tablef, method=method,logi=logi,rmax=rmax,mu=mu,ymax=ymax)
-                fig.savefig('composite_'+str(i)+'_gr'+'.png')
-            else:
-                spec=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi,mu=mu,ymax=ymax,ind=ind)
-                #print spec[1][1],spec[0][1]
-                for j in range(3):
-                    #plt.loglog()
-                    #plt.axis([10**14, 10**17, 10**-5*ymax, ymax])
-                    # ax.set_xlim(10.**14, 3*10.**16)
-                    # ax.set_ylim(10.**-5*ymax, ymax)
-                    # ax.set_xscale('log')
-                    # ax.set_yscale('log')
-                    # ax.set_xlabel(r"$\nu$ [Hz]")
-                    # ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
 
-                    # ax.plot(spec[j][0],spec[j][0]*spec[j][1], '-', color=cols[j])
-                    if bb or j==2:
-                        ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j%len(cols)])
-                    # else if j==2:
-                    #     ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[i%len(cols)])
-                # plt.plot(spec[1][0],spec[1][0]*spec[1][1])
-                # plt.plot(spec[2][0],spec[2][0]*spec[2][1])
-                # fig.savefig('composite_'+str(i)+'.eps')
-                # ax.cla()
+        for k in range(len(d)):
+            ax = fig.add_subplot(gs1[k])
+            if k==0:
+                ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
 
+            ax.set_xscale('log')
+            ax.set_yscale('log')
+            ax.set_xlabel(r"$\nu$ [Hz]")
+            ax.set_ylim(10.**-5*ymax, ymax)
+            ax.set_xlim(10.**14, 3.*10**16)
+
+            table=construct_table(tablef, logi=logi)
+            #pdf_pages = PdfPages('composite.pdf')
+            param_files=np.genfromtxt(d[k], dtype=str)
+            param_files=np.atleast_1d(param_files)
+
+            for i in range(len(param_files)):
+                #print param_files
+                if gr:
+                    fig=disk_spec_gr(param_files[i], table=table, tablef=tablef, method=method,logi=logi,rmax=rmax,mu=mu,ymax=ymax)
+                    fig.savefig('composite_'+str(i)+'_gr'+'.png')
+                else:
+
+                    spec=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi,mu=mu,ymax=ymax,ind=ind)
+                    #print spec[1][1],spec[0][1]
+                    for j in range(3):
+                        if bb or j==2:
+                            ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j%len(cols)])
+                        # else if j==2:
+                        #     ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[i%len(cols)])
+                    # plt.plot(spec[1][0],spec[1][0]*spec[1][1])
+                    # plt.plot(spec[2][0],spec[2][0]*spec[2][1])
+                    # fig.savefig('composite_'+str(i)+'.eps')
+                    # ax.cla()
+        gs1.tight_layout(fig)
         fig.savefig('composite.eps')
     elif t:
         table=construct_table(tablef, logi=logi)
