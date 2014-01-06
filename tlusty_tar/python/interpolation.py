@@ -621,6 +621,14 @@ def main():
     parser.add_argument('-d', '--disk',
         help='file(s) containing list of disk profile files ',
         nargs='*')
+    parser.add_argument('-c', '--colors',
+        help='color to use for plotting ',
+        nargs='*',
+        default=['k','0.25','r'])
+    parser.add_argument('-s', '--symbols',
+        help='symbols used for plotting ',
+        nargs='*',
+        default=['-', '--', '--', '--'])
     parser.add_argument('-mu', '--mu',
         help='cosine of inslincation angle for the case of a disk ',
         type=float,
@@ -676,20 +684,30 @@ def main():
     ymax=args.ymax
     ind=args.individual
     bb=args.bb
+    cols=args.colors
+    syms=args.symbols
+    #cols=['k','0.5','r']
+    #if args.colors:
+    print syms
 
     if d:
         #Set-up for plotting spectra
         plt.close('all')
         #fig,ax=plt.subplots(len(d), figsize=(10,8*len(d)), sharex=True)
         gs1 = gridspec.GridSpec(1, len(d))
-        fig=plt.figure(figsize=(10*len(d), 10))
+        fig=plt.figure(figsize=(12*len(d), 9))
+        #fig.subplots_adjust(bottom=0.2)
+        #fig.subplots_adjust(left=0.2)
+
+        size=40
+        mpl.rcParams['axes.labelsize']=size
+        mpl.rcParams['xtick.labelsize']=size
+        mpl.rcParams['ytick.labelsize']=size
+        mpl.rcParams['xtick.major.pad']=12
 
         
-        mpl.rcParams['axes.labelsize']=40
-        mpl.rcParams['xtick.labelsize']=40
-        mpl.rcParams['ytick.labelsize']=40
-        cols=['k','0.5','r']
-        syms=['-','--']
+        # syms=['-','--']
+
 
         # ax[-1].set_xlabel(r"$\nu$ [Hz]")
         # ax[-1].set_xlim(10.**14, 3.*10**16)
@@ -699,6 +717,8 @@ def main():
             ax = fig.add_subplot(gs1[k])
             if k==0:
                 ax.set_ylabel(r"$\nu \rm L_{\nu}$ [ergs s$^{-1}$]")
+            else:
+                plt.setp(ax.get_yticklabels(), visible=False)
 
             ax.set_xscale('log')
             ax.set_yscale('log')
@@ -720,16 +740,16 @@ def main():
 
                     spec=disk_spec(param_files[i], table=table, tablef=tablef, method=method,logi=logi,mu=mu,ymax=ymax,ind=ind)
                     #print spec[1][1],spec[0][1]
-                    for j in range(3):
-                        if bb or j==2:
-                            ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j%len(cols)])
-                        # else if j==2:
-                        #     ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[i%len(cols)])
-                    # plt.plot(spec[1][0],spec[1][0]*spec[1][1])
-                    # plt.plot(spec[2][0],spec[2][0]*spec[2][1])
-                    # fig.savefig('composite_'+str(i)+'.eps')
-                    # ax.cla()
-        gs1.tight_layout(fig)
+                    if bb:
+                        for j in range(3):
+                            ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j])
+                    else:
+                        ax.plot(spec[2][0],spec[2][0]*spec[2][1], syms[i%len(syms)], color=cols[i%len(cols)])
+                    # for j in range(3):
+                    #     if bb or j==2:
+                    #         ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j%len(cols)])
+
+        fig.tight_layout()
         fig.savefig('composite.eps')
     elif t:
         table=construct_table(tablef, logi=logi)
