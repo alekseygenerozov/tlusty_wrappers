@@ -11,7 +11,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 
 def sanitize(f, end='/fort.7'):
-    to_replace=re.compile('fort.*|/*')
+    to_replace=re.compile('fort.*|/*\Z')
     f=re.sub(to_replace,'',f)
     if f:
         return f+end
@@ -34,7 +34,7 @@ def pmodel(f, col=0, z=False):
 
 	plt.loglog()
 	if z:
-		z=atm[:,-1]
+		z=atm[:,3]
 		plt.plot(z,atm[:,col])
 	else:
 		plt.plot(m,atm[:,col])
@@ -56,7 +56,7 @@ def main():
 	parser.add_argument('-z', '--z',
 		help='flag to switch ind var from m to z in plot',
 		default=False,
-		action=store_true
+		action='store_true'
 		)
 
 	parser.parse_args()

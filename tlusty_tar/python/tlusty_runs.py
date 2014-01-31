@@ -273,7 +273,7 @@ def converge_check(f='fort.9',  thres=0.1):
 
 
 ##Move all tlusty output files to the apropriate directory    
-def clean(outdir, nlte, remove=False):
+def clean(outdir, nlte, remove=False, ninv=False):
     #maxchange= np.log10(np.absolute(maxchange))
     [conv,conv2]=converge_check()
     atm=parse_atm('fort.7')
@@ -282,6 +282,8 @@ def clean(outdir, nlte, remove=False):
         print 'Warning NANs detected in the TLUSTY output atmosphere!'
         conv=conv2=False
     inv=inv_check(atm)
+    if ninv:
+        inv=False
 
     prefix=''
     if not nlte:
@@ -327,7 +329,7 @@ def clean(outdir, nlte, remove=False):
 
 
 ##Run tlusty based on command line input parameters
-def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
+def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailname='tail', remove=False, value='', ninv=False):
     log_teff=params[0]
     log_dmtot=params[1]
     log_qgrav=params[2]
@@ -339,7 +341,7 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
         return
     run()
     #Move tlusty output files to the appropriate directory
-    [conv,model]=clean(outdir, nlte, remove)       
+    [conv,model]=clean(outdir, nlte, remove, ninv)       
     if not conv:
         return conv
     print model
@@ -351,13 +353,13 @@ def tlusty_runs_input(params, model, nlte=False, copy=True, combo=False, tailnam
             return outdir
         run()
         #Move tlusty output files to the appropriate directory
-        [conv,model]=clean(outdir, nlte, remove)
+        [conv,model]=clean(outdir, nlte, remove, ninv)
     return conv
 
 
 
 ##Run tlusty based on parameters found at the location of model
-def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value='',interp=False):
+def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=False, value='',interp=False, ninv=False):
     #Extract parameters of model
     params=parse_file(model)
     log_teff=params[0]
@@ -371,13 +373,13 @@ def tlusty_runs_model(model, nlte=False, copy=True, tailname='tail', remove=Fals
 
     run()
     #Move tlusty output files to the appropriate directory
-    clean(outdir, nlte, remove)
+    clean(outdir, nlte, remove, ninv)
     #return [maxchange, dest]
 
 
 
 ##Construct tlusty model based on info in myfile
-def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value=''):
+def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tailname='tail', remove=False, value='', ninv=False):
     params=ascii.read(myfile)
     ncols=len(params.columns)
 
@@ -407,7 +409,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
         run()
         #maxchange=reltot()
         #Move tlusty output files to the appropriate directory
-        [conv,model]=clean(outdir, nlte, remove)       
+        [conv,model]=clean(outdir, nlte, remove, ninv)       
         if not conv:
             continue
 
@@ -420,7 +422,7 @@ def tlusty_runs_file(myfile='params.in', nlte=False, copy=True, combo=False, tai
             run()
             #maxchange=reltot()
             #Move tlusty output files to the appropriate directory
-            clean(outdir,nlte, remove)
+            clean(outdir,nlte, remove, ninv)
 
 
 ##Driver; parse user input
@@ -456,6 +458,9 @@ def main():
     parser.add_argument('-val', '--value',
         help='Sets param value to be value in optional parameters file',
         default='')
+    parser.add_argument('-ni', '--ninv',
+        help='Dont label models w/dens inversion',
+        action='store_true')
     args=parser.parse_args()
 
     #Extract user inputted parameters
@@ -468,15 +473,16 @@ def main():
     tailname=args.tail
     remove=args.remove
     value=args.value
+    ninv=args.ninv
 
 
 
     if params:
-        tlusty_runs_input(params, model, nlte, copy, combo, tailname, remove, value)
+        tlusty_runs_input(params, model, nlte, copy, combo, tailname, remove, value, ninv)
     elif  model:
-        tlusty_runs_model(model, nlte, copy, tailname, remove, value)
+        tlusty_runs_model(model, nlte, copy, tailname, remove, value, ninv)
     else:
-        tlusty_runs_file(myfile, nlte, copy, combo, tailname, remove, value)
+        tlusty_runs_file(myfile, nlte, copy, combo, tailname, remove, value, ninv)
 
 
 if __name__ == '__main__':

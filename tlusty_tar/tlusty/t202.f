@@ -13566,7 +13566,6 @@ C
       INCLUDE 'ATOMIC.FOR'
       INCLUDE 'MODELQ.FOR'
       INCLUDE 'ARRAY1.FOR'
-      real lteff,lqgr,ldmt,lpb,lpgb,lzd
 C
 C ************    Print emergent radiation field on unit 13, namely
 C
@@ -13700,14 +13699,7 @@ C
   698    format(i3,1p11d11.4)
          end if
    70 CONTINUE
-      lteff=log10(teff)
-      ldmt=log10(dmtot)
-      lqgr=log10(qgrav)
-      lpb=log10(ptint/ZD(1))
-      lpgb=log10(pgint/ZD(1))
-      lzd=log10(ZD(1))
-      write(110, 705) lteff,ldmt,lqgr,lpb,lpgb,lzd
- 705  FORMAT(1H ,0pf10.3,0pf10.3,0pf10.3,0pf10.3,0pf10.3,0pf10.3)
+      write(110, *) ptint/ZD(1)
       if(hmix0.ge.0) then
          call CONOUT(1,1)
       endif
@@ -27292,7 +27284,7 @@ C     Thermodynamic derivatives
 C
       CALL TRMDER(ID,T,PG,PRAD,DEDT,DRDT,DEDPG,DRDPG,RHO)
       DPDPG=1.
-      dpdt=4.*PRAD/T
+      dpdt=0.
       if(taurs(id).lt.50.) DPDT=4.*PRAD/T*(un-exp(-taurs(id)))
       HEATCV=DEDT-DEDPG*DRDT/DRDPG
       HEATCP=DEDT-DEDPG*DPDT/DPDPG-PTOT/RHO/RHO*(DRDT-DRDPG*DPDT/DPDPG)
@@ -27567,7 +27559,7 @@ c     *       3X,'HYD.MOL',4X,'DELTA',2X,'DELTA(AD)',2X,'CON/TOT'//)
 c  601 FORMAT(1H ,I4,1PD9.2,0PF9.1,1P3D9.2,2X,2D9.2,1X,D9.2)
   600 FORMAT(//'  ID',3X,'TAUR',5X,'TEMP',5X,
      *       'DELTA',2X,'DELTA(AD)',2X,'CON/TOT  RAD/TOT  (C+R)/TOT'//)
-  601 FORMAT(1H ,I4,1PD9.2,0PF9.1,1P2D10.2,3D10.2)
+  601 FORMAT(1H ,I4,1PD9.2,0PF9.1,1P2D9.2,3D10.2)
   602 FORMAT(//' NDRE IS RESET IN CONOUT DUE TO THE EXISTENCE OF'
      *       ,' CONVECTIVE ZONE'/'  NDRE= ',I3/)
       RETURN
