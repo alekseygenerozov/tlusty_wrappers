@@ -315,7 +315,6 @@ def params_to_spec(params, table, method='', logi=False, mu=2):
         muarr=np.array([0.0130467357,0.0674683167,0.160295216,\
             0.283302303,0.425562831,0.574437169, 0.716697697,\
             0.839704784,0.932531683,0.986953264])
-
         nu=nu[:,0]
         grid2=np.empty((len(grid),2, len(nu)))
         for i in range(len(grid)):
@@ -516,12 +515,36 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6, ymax=10
     dr=np.empty_like(r)
     for i in range(len(lr)):
         dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
-
-
     outfile='sp_M'+'{0:.3e}'.format(M)+'_a'+'{0:.3f}'.format(a)+'_mu'+'{0:.3f}'.format(mu)
     np.savetxt(outfile, np.transpose([nu, totft]))
 
-    plt.close()
+    #Plotting individual spectra
+    if ind: 
+        fig,ax=plt.subplots(nrows=2, ncols=1, figsize=(6,16),sharex=True, subplot_kw=dict(adjustable='datalim'))
+        #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
+        plt.xlabel(r"$\nu$ [hz]")
+
+        #Plotting the composite disk spectrum
+        ax[0].set_ylabel(r"$\nu L_{\nu}$ [ergs s$^{-1}$]")
+        ax[0].set_xlim(10.**14, 3*10.**16)
+        ax[0].set_ylim(10.**38, 10.**45)
+        ax[0].set_xscale('log')
+        ax[0].set_yscale('log')
+        
+        ax[0].plot(nu, nu*totfg)
+        ax[0].plot(nu, nu*totfb)
+        ax[0].plot(nu, nu*totft)
+        ax[0].plot(nu, nu*totft2)
+
+        #Plotting the contributions of individual annuli
+        ax[1].set_ylim(10.**6, 10.**16)
+        ax[1].set_xlim(10.**14, 3*10.**16)
+        ax[1].set_xscale('log')
+        ax[1].set_yscale('log')
+        for i in range(len(specs)):
+            ax[1].plot(nu, specs[i, 1]*nu)
+        plt.savefig('ind.png')
+        plt.close()
     return [[nu,totfb],[nu,totfg],[nu,totft]]
 
 
@@ -704,13 +727,6 @@ def main():
         mpl.rcParams['xtick.labelsize']=size
         mpl.rcParams['ytick.labelsize']=size
         mpl.rcParams['xtick.major.pad']=12
-
-        
-        # syms=['-','--']
-
-
-        # ax[-1].set_xlabel(r"$\nu$ [Hz]")
-        # ax[-1].set_xlim(10.**14, 3.*10**16)
         
 
         for k in range(len(d)):
@@ -745,6 +761,7 @@ def main():
                             ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j])
                     else:
                         ax.plot(spec[2][0],spec[2][0]*spec[2][1], syms[i%len(syms)], color=cols[i%len(cols)])
+                        np.savetxt('spec.txt', np.transpose([spec[2][0], spec[2][0]*spec[2][1]]))
                     # for j in range(3):
                     #     if bb or j==2:
                     #         ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j%len(cols)])

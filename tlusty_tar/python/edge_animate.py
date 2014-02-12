@@ -45,10 +45,10 @@ def spec_animate(pat, dpi=100, ly_left=3.26E15, ly_right=3.35E15):
 	plt.loglog()
 	plt.xlabel(r"$\nu$ [hz]")
 	plt.ylabel(r"$\nu F_{\nu}$ [ergs s$^{-1}$ cm$^{-2}$ ]")
-	plt.axis([2.*10.**15, 4.*10.**15, 10.**6, 10.**16])
+	plt.axis([1.*10.**14, 1.*10.**17, 10.**6, 10.**16])
 
 
-	spec_plot,=ax.plot(spec[0,0], spec[0,0]*spec[0,1], 'bs-')
+	spec_plot,=ax.plot(spec[0,0], spec[0,0]*spec[0,1], 'b-')
 	spec_left=spec[0, 1, spec[0,0]<ly_left]
 	spec_right=spec[0, 1, spec[0,0]>ly_right]
 	edge_pts,=ax.plot([ly_left], [spec_left[-1]*ly_left], 'rs')
