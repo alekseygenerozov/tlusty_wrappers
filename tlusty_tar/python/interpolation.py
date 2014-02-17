@@ -467,7 +467,7 @@ def sum_spec(r, specs, Teff, Qg, mu, M=10.**6):
 
 
 ##Calculates a composite disk spectrum given an file containing input radial parameters.
-def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6, ymax=10.**46, ind=False):
+def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=-1, ymax=10.**46, ind=False):
     #ind=False
     #Construct table if necessary
     if table==[]:
@@ -520,7 +520,7 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6, ymax=10
 
     #Plotting individual spectra
     if ind: 
-        fig,ax=plt.subplots(nrows=2, ncols=1, figsize=(6,16),sharex=True, subplot_kw=dict(adjustable='datalim'))
+        fig,ax=plt.subplots(nrows=2, ncols=1, figsize=(16,32),sharex=True, subplot_kw=dict(adjustable='datalim'))
         #plt.title(str(bin_params[0])+" "+str(bin_params[1])+" "+str(bin_params[2]))
         plt.xlabel(r"$\nu$ [hz]")
 
@@ -545,7 +545,7 @@ def disk_spec(f, table=[], tablef='tmpd', method='', logi=False, mu=0.6, ymax=10
             ax[1].plot(nu, specs[i, 1]*nu)
         plt.savefig('ind.png')
         plt.close()
-    return [[nu,totfb],[nu,totfg],[nu,totft]]
+    return [[nu,totfb],[nu,totfg],[nu,totft], specs]
 
 
 ##Given a radial disk profile, calculates the spectra of each of the annuli, and then call the kerrtrans9 routine
@@ -794,44 +794,7 @@ def main():
 
         #Create animations comparing the interpolated spectra to tlusty spectra found in the specified directory
         animate_test_spec(models, table=table, tablef=tablef, method=method, logi=logi)
-
-        
-        # for o in order:
-        #     params2=params[o]
-        #     print params2
-        #     diff=np.diff(params2[:, 0])
-        #     br=np.where((diff>10**-6)
-
-        #     print br
-
-            # print np.split(params2, br)
-        
-        #animate_test_spec(models, table=table, tablef=tablef, method=method, logi=logi)
-
-
-        # params=np.array(map(tr.parse_file, models))
-        # params=map(tr.parse_file, models)
-        # params=np.array(params)
-        # teffs=params[:,0]
-        # order=np.argsort(teffs)
-
-        # models[order]
-        # for m in models:
-        #     m=m.rstrip()
-        #     spec=test_spec(m, table=table, tablef=tablef, method=method, logi=logi)
-        #     fig=spec[0]
-        #     deviation=spec[1]
-        #     logfile.write(m+" "+str(deviation)+"\n")
-        #     if deviation!=-1:
-        #         deviation_list=np.append(deviation_list,deviation)
-        #     #Save file 
-        #     pdf_pages.savefig(fig)
-
-        # print deviation_list
-        # pdf_pages.close()
-        # fig2=plt.figure()
-        # plt.hist(deviation_list, bins=50, normed=1)
-        # fig2.savefig('dev_hist.pdf')
+ 
     else:
         parser.print_help()
 
