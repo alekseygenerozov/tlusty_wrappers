@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.animation as animation
 import matplotlib.gridspec as gridspec
+import colorsys
 
 import argparse
 import subprocess
@@ -109,6 +110,47 @@ def get_spec(file,  mu=-1, nmu=10):
 
     return (wl,spec) 
 
+
+#Getting all files corresponding to a pattern pat
+def get_spec_pat(pat, mu=-1):
+    files=bash_command('echo '+pat)
+    files=shlex.split(files) 
+    spec=[]
+    params=[]
+    for f in files:
+        params.append(parse_file(f))
+        spec.append(regrid(get_spec(f, mu=-1)))
+    spec=np.array(spec)
+    params=np.array(params)
+    spec=spec[:,:,:,-1]
+    return [spec, params]
+
+#Generating rainbow of colors of size n
+def rainbow(n=10):
+    sat=1.
+    value=1.
+    cols=np.empty([n, 3])
+    for i in range(len(cols)):
+        hue=1./(i+1)
+        cols[i]=np.array(colorsys.hsv_to_rgb(hue, sat, value))
+
+    return cols
+
+#Plot flux of all files matching a pattern
+def plotf(pat):
+    [spec, params]=get_spec_pat(pat)
+    fig, ax=plt.subplots(figsize=(12,8))
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    cols=rainbow(n=len(spec))
+
+    peak=0.
+    for i in range(len(spec)):
+        peak=np.max([peak, np.max(spec[i,0]*spec[i,1])]) 
+        ax.plot(spec[i,0], spec[i,0]*spec[i,1], color=cols[i])
+    plt.axis([1.E14, 3.E16, 10.**-4*peak, 4*peak])
+    # plt.close()
+    return fig
 
 
 # Regrid spectrum in wavelength space. Want all spectra to be on the same grid in wavelength space when we interpolate; In frequency the default limits for the 
