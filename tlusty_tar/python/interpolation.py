@@ -336,7 +336,7 @@ def get_params(file):
 ##Use table construct spectra from list of parameters
 def params_to_spec(params, table, method='', logi=False, mu=2):
     intens=table[1]
-    nu=table[1][0,0]
+    nu=np.copy(table[1][0,0])
     #Interpolating based on table (interpolating in teff/qg space)
     print table[0].shape,intens.shape,params.shape
     if method:
@@ -347,10 +347,10 @@ def params_to_spec(params, table, method='', logi=False, mu=2):
     #Angle space
     #Flag to return flux for all angles
     if mu>1:
-        grid2=grid
+        grid2=np.copy(grid)
     #Flag to return flux
     elif mu<0:
-        grid2=grid[:,:,:,-1] 
+        grid2=np.copy(grid[:,:,:,-1])
         nu=nu[:,-1]    
     #Otherwise interpolate the spectrum in mu.
     else:
@@ -464,17 +464,13 @@ def sum_spec(r, specs, Teff, Qg, mu, M=10.**6):
     dr=np.empty_like(lr)
     for i in range(len(lr)):
         dr[i]=10.**(lr[i]+(dlr/2))-10.**(lr[i]-(dlr/2))
-    
-    valid=specs[1]
-    print valid
+    valid=np.copy(specs[1])
 
     specs=specs[0]
     specs=np.array(specs)
-    print specs[0].shape
-
     nu=specs[0,0]
     f=specs[:, 1]
-    print Teff,Qg
+
 
     bb=np.zeros_like(f[0])
     gb=np.zeros_like(f[0])
@@ -697,7 +693,7 @@ def main():
     parser.add_argument('-mu', '--mu',
         help='cosine of inslincation angle for the case of a disk ',
         type=float,
-        default=0.6)
+        default=-1)
     parser.add_argument('-t', '--test',
         help='directory containing the location of models to test',
         default='')
