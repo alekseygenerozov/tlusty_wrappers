@@ -685,7 +685,7 @@ def main():
     parser.add_argument('-c', '--colors',
         help='color to use for plotting ',
         nargs='*',
-        default=['k','0.25','r'])
+        default=['b','r','k'])
     parser.add_argument('-s', '--symbols',
         help='symbols used for plotting ',
         nargs='*',
@@ -749,7 +749,7 @@ def main():
     syms=args.symbols
     #cols=['k','0.5','r']
     #if args.colors:
-    print syms
+    labels=[['BB/BBH', 'GB/BBH', 'RT/BBH'],['BB/SBH', 'GB/SBH', 'RT/SBH']]
 
     if d:
         #Set-up for plotting spectra
@@ -765,6 +765,7 @@ def main():
         mpl.rcParams['xtick.labelsize']=size
         mpl.rcParams['ytick.labelsize']=size
         mpl.rcParams['xtick.major.pad']=12
+        mpl.rcParams['lines.linewidth']=2
         
 
         for k in range(len(d)):
@@ -796,7 +797,8 @@ def main():
                     #print spec[1][1],spec[0][1]
                     if bb:
                         for j in range(3):
-                            ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j])
+                            ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j], label=labels[i][j])
+                        ax.legend()
                     else:
                         ax.plot(spec[2][0],spec[2][0]*spec[2][1], syms[i%len(syms)], color=cols[i%len(cols)])
                         np.savetxt('spec.txt', np.transpose([spec[2][0], spec[2][0]*spec[2][1]]))
