@@ -749,7 +749,7 @@ def main():
     syms=args.symbols
     #cols=['k','0.5','r']
     #if args.colors:
-    labels=[['BB/BBH', 'GB/BBH', 'RT/BBH'],['BB/SBH', 'GB/SBH', 'RT/SBH']]
+    labels=['BB', 'GB', 'RT']
 
     if d:
         #Set-up for plotting spectra
@@ -764,6 +764,7 @@ def main():
         mpl.rcParams['axes.labelsize']=size
         mpl.rcParams['xtick.labelsize']=size
         mpl.rcParams['ytick.labelsize']=size
+        mpl.rcParams['legend.fontsize']=size
         mpl.rcParams['xtick.major.pad']=12
         mpl.rcParams['lines.linewidth']=2
         
@@ -797,8 +798,13 @@ def main():
                     #print spec[1][1],spec[0][1]
                     if bb:
                         for j in range(3):
-                            ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j], label=labels[i][j])
-                        ax.legend()
+                            ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j], label=labels[j])
+                            if k==0:
+                                ax.annotate('RT', xy=(3.28E15, 1.E43), xytext=(3.28E15, 4.E43), fontsize=size, arrowprops=dict(arrowstyle="->"), color='black')
+                                ax.annotate('BB', xy=(2.9E15, 1.E42), xytext=(1.E15, 2.E42),fontsize=size, arrowprops=dict(arrowstyle="->"), color='blue')
+                                ax.annotate('GB', xy=(5.E15, 1E41), xytext=(7.E15, 1.E41), fontsize=size, arrowprops=dict(arrowstyle="->"), color='red')  
+                        # if i==0:
+                        #     ax.legend(bbox_to_anchor=(0.3, 1))
                     else:
                         ax.plot(spec[2][0],spec[2][0]*spec[2][1], syms[i%len(syms)], color=cols[i%len(cols)])
                         np.savetxt('spec.txt', np.transpose([spec[2][0], spec[2][0]*spec[2][1]]))
