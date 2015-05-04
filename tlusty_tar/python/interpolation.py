@@ -118,7 +118,7 @@ def get_spec_pat(pat, mu=-1):
     spec=[]
     params=[]
     for f in files:
-        params.append(parse_file(f))
+        #params.append(parse_file(f))
         spec.append(regrid(get_spec(f, mu=-1)))
     spec=np.array(spec)
     params=np.array(params)
@@ -801,7 +801,7 @@ def main():
                             ax.plot(spec[j][0],spec[j][0]*spec[j][1], syms[i%len(syms)], color=cols[j], label=labels[j])
                             if k==0:
                                 ax.annotate('RT', xy=(3.28E15, 1.E43), xytext=(3.28E15, 4.E43), fontsize=size, arrowprops=dict(arrowstyle="->"), color='black')
-                                ax.annotate('BB', xy=(2.9E15, 1.E42), xytext=(1.E15, 2.E42),fontsize=size, arrowprops=dict(arrowstyle="->"), color='blue')
+                                ax.annotate('BB', xy=(2.5E15, 1.E42), xytext=(1.E15, 2.E42),fontsize=size, arrowprops=dict(arrowstyle="->"), color='blue')
                                 ax.annotate('GB', xy=(5.E15, 1E41), xytext=(7.E15, 1.E41), fontsize=size, arrowprops=dict(arrowstyle="->"), color='red')  
                         # if i==0:
                         #     ax.legend(bbox_to_anchor=(0.3, 1))
